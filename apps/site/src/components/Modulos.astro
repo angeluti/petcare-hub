@@ -1,0 +1,107 @@
+---
+import { MODULOS } from '../data/conteudo';
+---
+
+<section id="modulos" class="secao faixa" aria-labelledby="t-modulos">
+  <div class="recipiente">
+    <div class="cabeca-secao">
+      <p class="rotulo">Módulos</p>
+      <h2 id="t-modulos">Começa pelo banho e tosa. Cresce com o seu pet shop.</h2>
+      <p>
+        Cada módulo liga no mesmo painel, com os mesmos clientes e pets. Nada de cadastrar tudo de novo
+        em outro sistema.
+      </p>
+    </div>
+    <ul class="modulos">
+      {MODULOS.map((m) => (
+        <li class:list={['modulo', m.status]}>
+          <div class="topo-modulo">
+            <span class="nome">
+              <span class="hub">PetCare Hub</span> {m.nome}
+            </span>
+            <span class:list={['selo', m.status === 'disponivel' ? 'selo-disponivel' : 'selo-breve']}>
+              {m.status === 'disponivel' ? 'Disponível' : 'Em breve'}
+            </span>
+          </div>
+          <p class="cobre">{m.cobre}</p>
+          <p class="resultado">{m.resultado}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .modulos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .modulo {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    gap: 0.5rem;
+    padding: 1.4rem;
+    border: 1px solid var(--pc-linha);
+    border-radius: var(--pc-raio);
+    background: transparent;
+    min-width: 0;
+  }
+
+  .modulo.disponivel {
+    background: var(--pc-superficie);
+    border-color: var(--pc-tinta);
+    box-shadow: var(--pc-sombra);
+  }
+
+  .topo-modulo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .nome {
+    font-family: var(--pc-fonte-display);
+    font-size: var(--pc-t-xl);
+    line-height: 1.1;
+  }
+
+  .hub {
+    display: block;
+    font: 500 var(--pc-t-xs) / 1.4 var(--pc-fonte-mono);
+    letter-spacing: 0.04em;
+    color: var(--pc-tinta-suave);
+  }
+
+  .cobre {
+    font-weight: 600;
+    font-size: var(--pc-t-sm);
+  }
+
+  .resultado {
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .em-breve .nome {
+    color: var(--pc-tinta-suave);
+  }
+
+  @media (max-width: 960px) {
+    .modulos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 520px) {
+    .modulos {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

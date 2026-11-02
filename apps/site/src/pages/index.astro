@@ -1,0 +1,574 @@
+---
+import Base from '../layouts/Base.astro';
+import BotaoDemo from '../components/BotaoDemo.astro';
+import ConversaDemo from '../components/ConversaDemo.astro';
+import Modulos from '../components/Modulos.astro';
+import Planos from '../components/Planos.astro';
+import VideoDemo from '../components/VideoDemo.astro';
+import Depoimentos from '../components/Depoimentos.astro';
+import { SITE } from '../config';
+import { FAQ, JORNADA, PLANOS } from '../data/conteudo';
+
+const dados = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE.empresa,
+    url: SITE.url,
+    logo: `${SITE.url}/favicon.svg`,
+    address: { '@type': 'PostalAddress', addressLocality: 'Valinhos', addressRegion: 'SP', addressCountry: 'BR' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: SITE.nome,
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    description: SITE.descricao,
+    url: SITE.url,
+    publisher: { '@type': 'Organization', name: SITE.empresa },
+    offers: PLANOS.map((p) => ({
+      '@type': 'Offer',
+      name: `Plano ${p.nome}`,
+      price: p.preco.toFixed(2),
+      priceCurrency: 'BRL',
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: p.preco.toFixed(2),
+        priceCurrency: 'BRL',
+        billingDuration: 'P1M',
+      },
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.pergunta,
+      acceptedAnswer: { '@type': 'Answer', text: f.resposta },
+    })),
+  },
+];
+
+const resultados = [
+  {
+    titulo: 'Para de perder cliente no domingo',
+    texto:
+      'Quem manda mensagem à noite ou no fim de semana recebe resposta na hora e sai com o horário marcado, em vez de procurar outro pet shop.',
+  },
+  {
+    titulo: 'Menos horário vazio por esquecimento',
+    texto:
+      'Na véspera, o tutor recebe o lembrete e responde SIM ou NÃO. Quem desiste libera o horário a tempo de outro cliente ocupar.',
+  },
+  {
+    titulo: 'Uma agenda só, sem marcar dois no mesmo horário',
+    texto:
+      'O WhatsApp e o balcão consultam a mesma agenda, com a duração real de cada serviço por porte. O sistema recusa o horário que acabou de ser ocupado.',
+  },
+];
+
+const precosExemplo = [
+  { servico: 'Banho', valores: [35, 45, 60, 80] },
+  { servico: 'Tosa', valores: [40, 55, 70, 90] },
+  { servico: 'Banho e tosa', valores: [65, 85, 110, 145] },
+  { servico: 'Hidratação', valores: [25, 35, 45, 60] },
+];
+---
+
+<Base dadosEstruturados={dados}>
+  <!-- HERO (SI-01) -->
+  <section class="hero faixa">
+    <div class="recipiente hero-grade">
+      <div class="hero-texto">
+        <p class="rotulo">Para pet shops de banho e tosa</p>
+        <h1>Seu pet shop marca banho e tosa até de madrugada.</h1>
+        <p class="lead">
+          O PetCare Hub responde seus clientes no WhatsApp com o nome do seu pet shop, oferece só os horários
+          livres e lembra o tutor na véspera. Você cuida dos pets.
+        </p>
+        <div class="hero-acoes">
+          <BotaoDemo origem="hero" />
+          <a class="botao botao-contorno" href="#como-funciona">Ver como funciona</a>
+        </div>
+        <ul class="hero-garantias">
+          <li>Usa o WhatsApp que você já tem</li>
+          <li>Implantação por videochamada</li>
+          <li>Para qualquer cidade do Brasil</li>
+        </ul>
+      </div>
+      <ConversaDemo />
+    </div>
+  </section>
+
+  <!-- RESULTADOS -->
+  <section class="secao faixa resultados" aria-labelledby="t-resultados">
+    <div class="recipiente">
+      <div class="cabeca-secao">
+        <p class="rotulo">O que muda no seu dia</p>
+        <h2 id="t-resultados">Menos mensagem para responder, mais pet na agenda.</h2>
+      </div>
+      <ul class="grade-resultados">
+        {resultados.map((r) => (
+          <li>
+            <h3>{r.titulo}</h3>
+            <p>{r.texto}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA -->
+  <section id="como-funciona" class="secao faixa jornada" aria-labelledby="t-jornada">
+    <div class="recipiente">
+      <div class="cabeca-secao">
+        <p class="rotulo">Como funciona</p>
+        <h2 id="t-jornada">Do “oi” no WhatsApp ao pet entregue, na mesma agenda.</h2>
+        <p>Acompanhe o banho do Thor, marcado num domingo à noite.</p>
+      </div>
+      <ol class="linha-tempo">
+        {JORNADA.map((etapa, i) => (
+          <li>
+            <span class="passo" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <span class="quando">{etapa.quando}</span>
+            <h3>{etapa.titulo}</h3>
+            <p>{etapa.texto}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- VÍDEO (SI-01) -->
+  <VideoDemo />
+
+  <!-- DO JEITO DO SEU PET SHOP -->
+  <section class="secao faixa jeito" aria-labelledby="t-jeito">
+    <div class="recipiente jeito-grade">
+      <div class="jeito-texto">
+        <div class="cabeca-secao">
+          <p class="rotulo">Do jeito do seu pet shop</p>
+          <h2 id="t-jeito">Configurado com os seus serviços, preços e equipe.</h2>
+        </div>
+        <ul class="lista-jeito">
+          <li>
+            <h3>O atendente tem o nome que você escolher</h3>
+            <p>“Oi, eu sou a Luna, assistente do Pet Feliz.” O cliente conversa com o seu pet shop.</p>
+          </li>
+          <li>
+            <h3>Você assume a conversa quando quiser</h3>
+            <p>Respondeu pelo celular, o atendente para naquela conversa. Nada de número novo.</p>
+          </li>
+          <li>
+            <h3>Agenda por profissional</h3>
+            <p>Cada um com os serviços que faz. Quem trabalha com dois pets ao mesmo tempo começa o segundo enquanto o primeiro seca.</p>
+          </li>
+          <li>
+            <h3>Plaquinha com QR Code</h3>
+            <p>Feita a laser, com o nome do pet. O QR abre a ficha que o tutor escolher mostrar.</p>
+          </li>
+        </ul>
+      </div>
+      <figure class="tabela-porte">
+        <figcaption>
+          <span class="rotulo">Exemplo de tabela por porte</span>
+          <span>Preço e duração mudam com o porte. Você ajusta tudo.</span>
+        </figcaption>
+        <div class="tabela-rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Serviço</th>
+                <th scope="col">P</th>
+                <th scope="col">M</th>
+                <th scope="col">G</th>
+                <th scope="col">GG</th>
+              </tr>
+            </thead>
+            <tbody>
+              {precosExemplo.map((linha) => (
+                <tr>
+                  <th scope="row">{linha.servico}</th>
+                  {linha.valores.map((v) => <td>R$ {v}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- MÓDULOS -->
+  <Modulos />
+
+  <!-- PLANOS (SI-02) -->
+  <Planos />
+
+  <!-- DEPOIMENTOS (SI-07): só aparece quando houver depoimento cadastrado -->
+  <Depoimentos />
+
+  <!-- DÚVIDAS -->
+  <section id="duvidas" class="secao faixa duvidas" aria-labelledby="t-duvidas">
+    <div class="recipiente duvidas-grade">
+      <div class="cabeca-secao">
+        <p class="rotulo">Dúvidas</p>
+        <h2 id="t-duvidas">Perguntas de quem está avaliando.</h2>
+      </div>
+      <div class="lista-duvidas">
+        {FAQ.map((f) => (
+          <details>
+            <summary>{f.pergunta}</summary>
+            <p>{f.resposta}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAMADA FINAL -->
+  <section class="faixa final" aria-labelledby="t-final">
+    <div class="recipiente final-caixa">
+      <h2 id="t-final">Veja seu pet shop atendendo sozinho.</h2>
+      <p>Uma demonstração de 5 minutos pelo WhatsApp, com os serviços do seu pet shop.</p>
+      <BotaoDemo origem="final" />
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* HERO */
+  .hero {
+    padding-block: clamp(2.5rem, 7vw, 5.5rem) clamp(3rem, 7vw, 5rem);
+  }
+
+  .hero-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  .hero-texto {
+    display: grid;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .hero h1 {
+    max-width: 14ch;
+  }
+
+  .hero-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .hero-garantias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .hero-garantias li::before {
+    content: '✓';
+    color: var(--pc-ok);
+    font-weight: 700;
+    margin-right: 0.4rem;
+  }
+
+  /* RESULTADOS */
+  .resultados {
+    background: var(--pc-superficie);
+    border-block: 1px solid var(--pc-linha);
+  }
+
+  .grade-resultados {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .grade-resultados li {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    padding-top: 1.1rem;
+    border-top: 2px solid var(--pc-tinta);
+  }
+
+  .grade-resultados h3 {
+    font-size: var(--pc-t-xl);
+  }
+
+  .grade-resultados p {
+    color: var(--pc-tinta-suave);
+  }
+
+  /* JORNADA */
+  .linha-tempo {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2.25rem 1.5rem;
+    counter-reset: etapa;
+  }
+
+  .linha-tempo li {
+    position: relative;
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
+    padding-top: 1.6rem;
+  }
+
+  .linha-tempo li::before {
+    content: '';
+    position: absolute;
+    top: 0.45rem;
+    left: 0;
+    right: -1.5rem;
+    height: 1px;
+    background: var(--pc-linha);
+  }
+
+  .linha-tempo li:nth-child(4n)::before,
+  .linha-tempo li:last-child::before {
+    right: 0;
+  }
+
+  .passo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding-right: 0.5rem;
+    background: var(--pc-espuma);
+    font: 500 var(--pc-t-xs) / 1 var(--pc-fonte-mono);
+    color: var(--pc-azul);
+  }
+
+  .quando {
+    font: 500 var(--pc-t-xs) / 1.4 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+    letter-spacing: 0.02em;
+  }
+
+  .linha-tempo h3 {
+    font-size: 1.15rem;
+  }
+
+  .linha-tempo p {
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  /* DO JEITO DO SEU PET SHOP */
+  .jeito {
+    background: var(--pc-superficie);
+    border-block: 1px solid var(--pc-linha);
+  }
+
+  .jeito-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .lista-jeito {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem 2rem;
+  }
+
+  .lista-jeito li {
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
+  }
+
+  .lista-jeito h3 {
+    font-family: var(--pc-fonte-texto);
+    font-weight: 650;
+    font-size: 1.05rem;
+    letter-spacing: 0;
+  }
+
+  .lista-jeito p {
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .tabela-porte {
+    margin: 0;
+    background: var(--pc-espuma);
+    border: 1px solid var(--pc-linha);
+    border-radius: var(--pc-raio);
+    padding: 1.4rem;
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .tabela-porte figcaption {
+    display: grid;
+    gap: 0.25rem;
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .tabela-rolagem {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--pc-t-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  th,
+  td {
+    padding: 0.6rem 0.5rem;
+    text-align: right;
+    border-bottom: 1px solid var(--pc-linha);
+    white-space: nowrap;
+  }
+
+  thead th {
+    font: 500 var(--pc-t-xs) / 1 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+    letter-spacing: 0.06em;
+  }
+
+  th[scope='row'],
+  thead th:first-child {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+
+  /* DÚVIDAS */
+  .duvidas-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .lista-duvidas {
+    border-top: 1px solid var(--pc-linha);
+  }
+
+  details {
+    border-bottom: 1px solid var(--pc-linha);
+  }
+
+  summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 0;
+    font-weight: 600;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary::after {
+    content: '+';
+    font-family: var(--pc-fonte-mono);
+    color: var(--pc-azul);
+    flex: none;
+  }
+
+  details[open] summary::after {
+    content: '−';
+  }
+
+  details p {
+    padding-bottom: 1.2rem;
+    color: var(--pc-tinta-suave);
+    max-width: 60ch;
+  }
+
+  /* CHAMADA FINAL */
+  .final {
+    padding-block: 0 clamp(3.5rem, 8vw, 6rem);
+  }
+
+  .final-caixa {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    padding: clamp(2rem, 6vw, 3.5rem);
+    border-radius: calc(var(--pc-raio) * 1.5);
+    background: var(--pc-tinta);
+    color: var(--pc-espuma);
+  }
+
+  .final-caixa h2 {
+    max-width: 18ch;
+  }
+
+  .final-caixa p {
+    color: color-mix(in srgb, var(--pc-espuma) 78%, transparent);
+    max-width: 50ch;
+  }
+
+  /* RESPONSIVO */
+  @media (max-width: 960px) {
+    .hero-grade,
+    .jeito-grade,
+    .duvidas-grade {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .linha-tempo {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .linha-tempo li:nth-child(2n)::before {
+      right: 0;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .grade-resultados,
+    .lista-jeito {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 520px) {
+    .linha-tempo {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.75rem;
+    }
+    .linha-tempo li::before {
+      right: 0;
+    }
+  }
+</style>

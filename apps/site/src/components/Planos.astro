@@ -1,0 +1,198 @@
+---
+import BotaoDemo from './BotaoDemo.astro';
+import { PLANOS } from '../data/conteudo';
+
+const reais = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 0 });
+---
+
+<section id="planos" class="secao faixa planos-secao" aria-labelledby="t-planos">
+  <div class="recipiente">
+    <div class="cabeca-secao">
+      <p class="rotulo">Planos</p>
+      <h2 id="t-planos">Mensalidade fixa, sem cobrança por mensagem.</h2>
+      <p>
+        Os dois planos usam o mesmo sistema. O que muda é o tamanho da equipe e o que vem junto.
+        A implantação tem valor único, combinado na demonstração.
+      </p>
+    </div>
+
+    <div class="planos">
+      {PLANOS.map((p) => (
+        <article class:list={['plano', { destaque: p.destaque }]} aria-labelledby={`plano-${p.id}`}>
+          <header>
+            <p class="apelido">{p.apelido}</p>
+            <h3 id={`plano-${p.id}`}>{p.nome}</h3>
+            <p class="preco">
+              <span class="moeda">R$</span>
+              <span class="valor">{reais(p.preco)}</span>
+              <span class="periodo">/mês</span>
+            </p>
+            <p class="perfil">{p.perfil}</p>
+          </header>
+
+          <ul class="inclui">
+            {p.inclui.map((item) => <li>{item}</li>)}
+          </ul>
+
+          {p.emBreve.length > 0 && (
+            <div class="breve">
+              <p class="rotulo">Entra no plano quando lançar</p>
+              <ul>
+                {p.emBreve.map((item) => <li>{item}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <BotaoDemo
+            origem={`plano-${p.id}`}
+            classe={p.destaque ? 'botao botao-principal' : 'botao botao-contorno'}
+            icone={false}
+          >
+            Quero o {p.nome}
+          </BotaoDemo>
+        </article>
+      ))}
+    </div>
+
+    <p class="nota">
+      Tem hotel, creche ou clínica? Os planos Day Care e Clinic estão a caminho. Conte na demonstração o que
+      você precisa.
+    </p>
+  </div>
+</section>
+
+<style>
+  .planos-secao {
+    background: var(--pc-superficie);
+    border-block: 1px solid var(--pc-linha);
+  }
+
+  .planos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    max-width: 880px;
+  }
+
+  .plano {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: 1.5rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    border: 1px solid var(--pc-linha);
+    border-radius: calc(var(--pc-raio) * 1.3);
+    background: var(--pc-espuma);
+    min-width: 0;
+  }
+
+  .plano.destaque {
+    border: 2px solid var(--pc-azul);
+    background: var(--pc-superficie);
+    box-shadow: var(--pc-sombra);
+  }
+
+  header {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .apelido {
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  h3 {
+    font-size: var(--pc-t-2xl);
+  }
+
+  .preco {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .moeda {
+    font-weight: 600;
+    color: var(--pc-tinta-suave);
+  }
+
+  .valor {
+    font-family: var(--pc-fonte-display);
+    font-size: 3.2rem;
+    line-height: 1;
+  }
+
+  .periodo {
+    color: var(--pc-tinta-suave);
+  }
+
+  .perfil {
+    font: 500 var(--pc-t-xs) / 1.5 var(--pc-fonte-mono);
+    color: var(--pc-tinta);
+    padding: 0.35rem 0.6rem;
+    background: var(--pc-azul-claro);
+    border-radius: 6px;
+    justify-self: start;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    font-size: var(--pc-t-sm);
+  }
+
+  .inclui li {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+
+  .inclui li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--pc-ok);
+    font-weight: 700;
+  }
+
+  .breve {
+    display: grid;
+    gap: 0.6rem;
+    padding-top: 1.1rem;
+    border-top: 1px dashed var(--pc-linha);
+  }
+
+  .breve li {
+    color: var(--pc-tinta-suave);
+    padding-left: 1.5rem;
+    position: relative;
+  }
+
+  .breve li::before {
+    content: '○';
+    position: absolute;
+    left: 0.1rem;
+    color: var(--pc-tinta-suave);
+  }
+
+  .plano :global(.botao) {
+    width: 100%;
+  }
+
+  .nota {
+    margin-top: 1.75rem;
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+    max-width: 60ch;
+  }
+
+  @media (max-width: 720px) {
+    .planos {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

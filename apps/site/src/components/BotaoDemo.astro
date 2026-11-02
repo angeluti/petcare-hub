@@ -1,0 +1,27 @@
+---
+/**
+ * Botão "Agendar demonstração" (SI-03): abre o WhatsApp comercial com a mensagem pronta.
+ * Sem formulário por e-mail enquanto o SMTP próprio não existe.
+ */
+import IconeWhatsapp from './IconeWhatsapp.astro';
+import { linkDemonstracao, WHATSAPP_COMERCIAL_OK } from '../config';
+
+interface Props {
+  origem: string;
+  classe?: string;
+  icone?: boolean;
+}
+const { origem, classe = 'botao botao-principal', icone = true } = Astro.props;
+const externo = WHATSAPP_COMERCIAL_OK;
+---
+
+<a
+  class={classe}
+  href={linkDemonstracao(origem)}
+  target={externo ? '_blank' : undefined}
+  rel={externo ? 'noopener' : undefined}
+  data-origem={origem}
+>
+  {icone && <IconeWhatsapp />}
+  <slot>Agendar demonstração</slot>
+</a>

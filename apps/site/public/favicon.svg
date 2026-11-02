@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .p{fill:#10213a}.a{fill:#1f5fd6}.l{stroke:#1f5fd6}
+    @media (prefers-color-scheme: dark){.p{fill:#e6edf6}.a{fill:#6f9cf3}.l{stroke:#6f9cf3}}
+  </style>
+  <g class="l" stroke-width="1.6" stroke-linecap="round" opacity="0.55">
+    <line x1="16" y1="21" x2="6.5" y2="12.5"/><line x1="16" y1="21" x2="12" y2="6.5"/>
+    <line x1="16" y1="21" x2="20" y2="6.5"/><line x1="16" y1="21" x2="25.5" y2="12.5"/>
+  </g>
+  <g class="a"><circle cx="6.5" cy="12.5" r="3"/><circle cx="12" cy="6.5" r="3"/><circle cx="20" cy="6.5" r="3"/><circle cx="25.5" cy="12.5" r="3"/></g>
+  <ellipse class="p" cx="16" cy="22" rx="7" ry="6"/>
+</svg>

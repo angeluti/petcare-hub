@@ -1,0 +1,27 @@
+{
+  "name": "@petcare-hub/site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Site de venda do PetCare Hub (www.petcarehub.com.br)",
+  "engines": {
+    "node": ">=20.3"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.6.0",
+    "@fontsource-variable/figtree": "^5.2.0",
+    "@fontsource/jetbrains-mono": "^5.2.0",
+    "@fontsource/young-serif": "^5.2.0",
+    "astro": "^5.14.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.0"
+  }
+}

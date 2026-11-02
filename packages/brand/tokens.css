@@ -1,0 +1,99 @@
+/*
+  PetCare Hub — tokens de marca compartilhados
+  Usado por: apps/site (www.) e, depois, apps/painel (app.) e apps/pet (pet.).
+
+  Como importar:
+    - Astro (site):  import '../../../../packages/brand/tokens.css'  (no layout)
+    - Vite/React (painel): import '../../../packages/brand/tokens.css' (no main.tsx)
+  Fontes: instalar no app que usa (@fontsource/young-serif, @fontsource-variable/figtree,
+  @fontsource/jetbrains-mono) e importar os CSS delas antes deste arquivo.
+  Fontes locais (sem Google Fonts) evitam enviar o IP do visitante a terceiros (LGPD)
+  e não dependem de outro domínio.
+
+  Conceito: azul de água limpa sobre fundo "espuma" frio, tinta azul-marinho para texto,
+  amarelo "toalha" só para destaque pontual. O azul é o mesmo acento da Harpia Tech.
+*/
+
+:root {
+  /* Cor */
+  --pc-espuma: #f3f7f8;        /* fundo da página */
+  --pc-superficie: #ffffff;    /* cartões, painéis */
+  --pc-tinta: #10213a;         /* texto principal */
+  --pc-tinta-suave: #4c6078;   /* texto secundário */
+  --pc-linha: #d3dfe5;         /* bordas e divisórias */
+  --pc-azul: #1f5fd6;          /* acento de marca, links, botão principal */
+  --pc-azul-forte: #174aa8;    /* hover do acento */
+  --pc-sobre-azul: #ffffff;    /* texto sobre o acento */
+  --pc-azul-claro: #e2ecfb;    /* fundo de destaque suave */
+  --pc-toalha: #f2b83a;        /* destaque pontual (selo "disponível", grifo) */
+  --pc-sobre-toalha: #10213a;
+  --pc-balao-tutor: #ffffff;   /* conversa de WhatsApp */
+  --pc-balao-bot: #d9f2cf;
+  --pc-ok: #1e8a4c;
+  --pc-aviso: #b46a00;
+  --pc-erro: #c0362c;
+
+  /* Tipo */
+  --pc-fonte-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --pc-fonte-texto: "Figtree Variable", "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pc-fonte-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Escala de tipo (1.25) */
+  --pc-t-xs: 0.78rem;
+  --pc-t-sm: 0.9rem;
+  --pc-t-base: 1.0625rem;
+  --pc-t-lg: 1.25rem;
+  --pc-t-xl: 1.6rem;
+  --pc-t-2xl: 2.1rem;
+  --pc-t-3xl: clamp(2.3rem, 5.2vw, 3.6rem);
+
+  /* Forma e espaço */
+  --pc-raio: 14px;
+  --pc-raio-sm: 8px;
+  --pc-sombra: 0 1px 2px rgb(16 33 58 / 0.06), 0 8px 24px rgb(16 33 58 / 0.08);
+  --pc-largura: 1120px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pc-espuma: #0b1524;
+    --pc-superficie: #122039;
+    --pc-tinta: #e6edf6;
+    --pc-tinta-suave: #9fb2c8;
+    --pc-linha: #243759;
+    --pc-azul: #6f9cf3;
+    --pc-azul-forte: #9bbcf8;
+    --pc-sobre-azul: #0b1524;
+    --pc-azul-claro: #172b50;
+    --pc-toalha: #e8b04c;
+    --pc-sobre-toalha: #0b1524;
+    --pc-balao-tutor: #1a2a46;
+    --pc-balao-bot: #1d4630;
+    --pc-ok: #5cc98a;
+    --pc-aviso: #e5a64a;
+    --pc-erro: #ef7a70;
+    --pc-sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.35);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --pc-espuma: #0b1524;
+  --pc-superficie: #122039;
+  --pc-tinta: #e6edf6;
+  --pc-tinta-suave: #9fb2c8;
+  --pc-linha: #243759;
+  --pc-azul: #6f9cf3;
+  --pc-azul-forte: #9bbcf8;
+  --pc-sobre-azul: #0b1524;
+  --pc-azul-claro: #172b50;
+  --pc-toalha: #e8b04c;
+  --pc-sobre-toalha: #0b1524;
+  --pc-balao-tutor: #1a2a46;
+  --pc-balao-bot: #1d4630;
+  --pc-ok: #5cc98a;
+  --pc-aviso: #e5a64a;
+  --pc-erro: #ef7a70;
+  --pc-sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}

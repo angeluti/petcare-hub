@@ -1,0 +1,149 @@
+---
+import Marca from './Marca.astro';
+import BotaoDemo from './BotaoDemo.astro';
+import SeloHarpia from './SeloHarpia.astro';
+import { SITE } from '../config';
+
+const links = [
+  { href: '/#como-funciona', texto: 'Como funciona' },
+  { href: '/#modulos', texto: 'Módulos' },
+  { href: '/#planos', texto: 'Planos' },
+  { href: '/#duvidas', texto: 'Dúvidas' },
+];
+---
+
+<header class="topo faixa">
+  <div class="recipiente barra">
+    <a href="/" class="link-marca" aria-label="PetCare Hub, página inicial">
+      <Marca />
+    </a>
+    <span class="selo-topo"><SeloHarpia /></span>
+
+    <nav aria-label="Principal" class="nav">
+      <ul>
+        {links.map((l) => <li><a href={l.href}>{l.texto}</a></li>)}
+      </ul>
+    </nav>
+
+    <div class="acoes">
+      <a class="botao botao-contorno entrar" href={SITE.appUrl}>Entrar</a>
+      <BotaoDemo origem="topo" classe="botao botao-principal demo">
+        <span class="demo-longo">Agendar demonstração</span>
+        <span class="demo-curto">Demonstração</span>
+      </BotaoDemo>
+    </div>
+  </div>
+</header>
+
+<style>
+  :global(body)::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 30;
+    background: var(--pc-espuma);
+  }
+
+  .topo {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: color-mix(in srgb, var(--pc-espuma) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    -webkit-backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--pc-linha);
+  }
+
+  .barra {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    min-height: 68px;
+  }
+
+  .link-marca {
+    text-decoration: none;
+    flex: none;
+  }
+
+  .selo-topo {
+    margin-left: -0.75rem;
+    padding-top: 0.35rem;
+  }
+
+  .nav {
+    flex: 1;
+  }
+
+  @media (max-width: 1100px) {
+    .selo-topo {
+      display: none;
+    }
+  }
+
+  .nav ul {
+    display: flex;
+    gap: 1.6rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav a {
+    color: var(--pc-tinta-suave);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--pc-t-sm);
+  }
+
+  .nav a:hover {
+    color: var(--pc-tinta);
+  }
+
+  .acoes {
+    display: flex;
+    gap: 0.6rem;
+    margin-left: auto;
+  }
+
+  .acoes :global(.botao) {
+    min-height: 42px;
+    padding: 0.5rem 1.05rem;
+    font-size: var(--pc-t-sm);
+  }
+
+  .demo-curto {
+    display: none;
+  }
+
+  @media (max-width: 900px) {
+    .nav {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .barra {
+      gap: 0.75rem;
+    }
+    .demo-longo {
+      display: none;
+    }
+    .demo-curto {
+      display: inline;
+    }
+    .acoes :global(.demo svg) {
+      display: none;
+    }
+    .acoes :global(.botao) {
+      padding: 0.45rem 0.85rem;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .link-marca :global(.nome) {
+      font-size: 1.05rem;
+    }
+  }
+</style>

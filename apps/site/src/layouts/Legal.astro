@@ -1,0 +1,131 @@
+---
+/**
+ * Layout das páginas jurídicas (SI-04), usado pelos arquivos .md em src/pages/.
+ * Frontmatter esperado: titulo, descricao, atualizadoEm (AAAA-MM-DD), rascunho (boolean).
+ * Enquanto `rascunho: true`, a página mostra o aviso de versão preliminar.
+ */
+import Base from './Base.astro';
+
+interface Props {
+  frontmatter: {
+    titulo: string;
+    descricao: string;
+    atualizadoEm: string;
+    rascunho?: boolean;
+  };
+}
+
+const { frontmatter } = Astro.props;
+const data = new Date(`${frontmatter.atualizadoEm}T12:00:00-03:00`).toLocaleDateString('pt-BR', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'America/Sao_Paulo',
+});
+---
+
+<Base titulo={frontmatter.titulo} descricao={frontmatter.descricao}>
+  <article class="faixa legal">
+    <div class="recipiente coluna">
+      <header>
+        <p class="rotulo">Legal</p>
+        <h1>{frontmatter.titulo}</h1>
+        <p class="data">Última atualização: {data}</p>
+        {frontmatter.rascunho && (
+          <p class="aviso" role="note">
+            Versão preliminar, em revisão jurídica. O texto pode mudar antes do início da operação comercial.
+          </p>
+        )}
+      </header>
+      <div class="corpo">
+        <slot />
+      </div>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .legal {
+    padding-block: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  .coluna {
+    max-width: 46rem;
+  }
+
+  header {
+    display: grid;
+    gap: 0.75rem;
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--pc-linha);
+  }
+
+  h1 {
+    font-size: var(--pc-t-2xl);
+  }
+
+  .data {
+    font: 500 var(--pc-t-xs) / 1.4 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+  }
+
+  .aviso {
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--pc-aviso);
+    background: var(--pc-superficie);
+    font-size: var(--pc-t-sm);
+  }
+
+  .corpo {
+    display: grid;
+    gap: 1rem;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .corpo :global(h2) {
+    font-size: var(--pc-t-xl);
+    margin-top: 1.5rem;
+  }
+
+  .corpo :global(h3) {
+    font-family: var(--pc-fonte-texto);
+    font-weight: 650;
+    font-size: 1.05rem;
+    margin-top: 0.5rem;
+  }
+
+  .corpo :global(ul),
+  .corpo :global(ol) {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .corpo :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--pc-t-sm);
+    display: block;
+    overflow-x: auto;
+  }
+
+  .corpo :global(th),
+  .corpo :global(td) {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid var(--pc-linha);
+  }
+
+  .corpo :global(th) {
+    font: 500 var(--pc-t-xs) / 1.3 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+  }
+
+  .corpo :global(strong) {
+    font-weight: 650;
+  }
+</style>

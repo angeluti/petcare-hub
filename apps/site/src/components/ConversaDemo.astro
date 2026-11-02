@@ -1,0 +1,191 @@
+---
+/**
+ * Conversa ilustrativa do atendente no WhatsApp (hero).
+ * Dados fictícios do seed de teste (Pet Feliz, atendente "Luna", Thor porte M, banho M R$45).
+ */
+const mensagens = [
+  { de: 'tutor', hora: '23:47', texto: 'oi, tem horário pra banho na terça? é pro Thor' },
+  {
+    de: 'bot',
+    hora: '23:47',
+    texto: 'Oi! Eu sou a Luna, assistente do Pet Feliz. Para o Thor (porte M), na terça tenho:',
+    opcoes: ['1) 09:00', '2) 10:30', '3) 14:00'],
+  },
+  { de: 'tutor', hora: '23:48', texto: '1' },
+  {
+    de: 'bot',
+    hora: '23:48',
+    texto: 'Pronto! Banho do Thor na terça às 09:00, R$ 45,00. Na véspera eu te lembro por aqui.',
+  },
+];
+---
+
+<figure class="conversa" aria-label="Exemplo de conversa: tutor marca banho às 23h47 de domingo">
+  <div class="aparelho">
+    <div class="cabeca">
+      <span class="avatar" aria-hidden="true">PF</span>
+      <span class="quem">
+        <strong>Pet Feliz</strong>
+        <span>Luna · assistente</span>
+      </span>
+      <span class="dia">Dom</span>
+    </div>
+    <ol class="mensagens">
+      {mensagens.map((m) => (
+        <li class:list={['balao', m.de]}>
+          <span class="visualmente-oculto">{m.de === 'tutor' ? 'Tutor:' : 'Atendente:'}</span>
+          <p>{m.texto}</p>
+          {m.opcoes && (
+            <ul class="opcoes">
+              {m.opcoes.map((o) => <li>{o}</li>)}
+            </ul>
+          )}
+          <time>{m.hora}</time>
+        </li>
+      ))}
+    </ol>
+  </div>
+  <figcaption>
+    <span class="hora-grande">23:47</span>
+    <span>Domingo. O pet shop está fechado e o horário de terça já está na agenda.</span>
+  </figcaption>
+</figure>
+
+<style>
+  .conversa {
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+    justify-items: center;
+  }
+
+  .aparelho {
+    width: min(100%, 360px);
+    background: var(--pc-superficie);
+    border: 1px solid var(--pc-linha);
+    border-radius: 28px;
+    box-shadow: var(--pc-sombra);
+    overflow: hidden;
+  }
+
+  .cabeca {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid var(--pc-linha);
+  }
+
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--pc-azul-claro);
+    color: var(--pc-azul);
+    font: 600 0.8rem/1 var(--pc-fonte-mono);
+    flex: none;
+  }
+
+  .quem {
+    display: grid;
+    line-height: 1.25;
+    min-width: 0;
+  }
+
+  .quem strong {
+    font-size: 0.98rem;
+  }
+
+  .quem span {
+    font-size: var(--pc-t-xs);
+    color: var(--pc-tinta-suave);
+  }
+
+  .dia {
+    margin-left: auto;
+    font: 500 var(--pc-t-xs) / 1 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+  }
+
+  .mensagens {
+    list-style: none;
+    margin: 0;
+    padding: 1.1rem 0.9rem 1.3rem;
+    display: grid;
+    gap: 0.55rem;
+    background:
+      radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--pc-linha) 70%, transparent) 1px, transparent 0) 0 0 / 14px 14px,
+      var(--pc-espuma);
+  }
+
+  .balao {
+    position: relative;
+    max-width: 82%;
+    padding: 0.55rem 0.75rem 1.2rem;
+    border-radius: 14px;
+    font-size: 0.93rem;
+    line-height: 1.45;
+    box-shadow: 0 1px 1px rgb(16 33 58 / 0.08);
+    animation: entra 0.45s ease both;
+  }
+
+  .balao:nth-child(2) { animation-delay: 0.15s; }
+  .balao:nth-child(3) { animation-delay: 0.3s; }
+  .balao:nth-child(4) { animation-delay: 0.45s; }
+
+  .tutor {
+    justify-self: end;
+    background: var(--pc-balao-tutor);
+    border-bottom-right-radius: 4px;
+  }
+
+  .bot {
+    justify-self: start;
+    background: var(--pc-balao-bot);
+    border-bottom-left-radius: 4px;
+  }
+
+  .opcoes {
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0;
+    font-family: var(--pc-fonte-mono);
+    font-size: 0.84rem;
+  }
+
+  time {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.3rem;
+    font: 500 0.68rem/1 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+  }
+
+  figcaption {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    max-width: 360px;
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .hora-grande {
+    font-family: var(--pc-fonte-mono);
+    font-weight: 500;
+    font-size: 1.05rem;
+    padding: 0.1rem 0.45rem;
+    background: var(--pc-toalha);
+    color: var(--pc-sobre-toalha);
+    border-radius: 6px;
+    flex: none;
+  }
+
+  /* Parte de um estado visível: só desliza um pouco, nunca começa invisível. */
+  @keyframes entra {
+    from { transform: translateY(6px); }
+    to { transform: none; }
+  }
+</style>

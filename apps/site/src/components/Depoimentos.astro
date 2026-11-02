@@ -1,0 +1,82 @@
+---
+/**
+ * Depoimentos (SI-07). Não renderiza nada enquanto DEPOIMENTOS estiver vazio.
+ * Para ativar: adicionar itens em src/data/conteudo.ts (com autorização por escrito do pet shop).
+ */
+import { DEPOIMENTOS } from '../data/conteudo';
+---
+
+{DEPOIMENTOS.length > 0 && (
+  <section class="secao faixa" aria-labelledby="t-depoimentos">
+    <div class="recipiente">
+      <div class="cabeca-secao">
+        <p class="rotulo">Quem já usa</p>
+        <h2 id="t-depoimentos">Pet shops que pararam de responder WhatsApp de madrugada.</h2>
+      </div>
+      <ul class="depoimentos">
+        {DEPOIMENTOS.map((d) => (
+          <li>
+            <blockquote>
+              <p>{d.texto}</p>
+            </blockquote>
+            <p class="autor">
+              {d.foto && <img src={d.foto} alt="" width="44" height="44" loading="lazy" />}
+              <span>
+                <strong>{d.nome}</strong>
+                <span>{d.petshop} · {d.cidade}</span>
+              </span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .depoimentos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 1.25rem;
+  }
+
+  li {
+    display: grid;
+    gap: 1.25rem;
+    align-content: space-between;
+    padding: 1.6rem;
+    border-radius: var(--pc-raio);
+    background: var(--pc-superficie);
+    border: 1px solid var(--pc-linha);
+  }
+
+  blockquote {
+    margin: 0;
+    font-family: var(--pc-fonte-display);
+    font-size: 1.2rem;
+    line-height: 1.4;
+  }
+
+  .autor {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: var(--pc-t-sm);
+  }
+
+  .autor img {
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .autor span {
+    display: grid;
+  }
+
+  .autor span span {
+    color: var(--pc-tinta-suave);
+  }
+</style>

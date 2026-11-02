@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../config';
+---
+
+<Base titulo="Página não encontrada" semIndice>
+  <section class="faixa secao">
+    <div class="recipiente erro">
+      <p class="rotulo">Erro 404</p>
+      <h1>Essa página não existe.</h1>
+      <p>Se você procurava o painel do seu pet shop, ele fica em outro endereço.</p>
+      <div class="acoes">
+        <a class="botao botao-principal" href={SITE.appUrl}>Ir para o painel</a>
+        <a class="botao botao-contorno" href="/">Voltar ao início</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .erro {
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+    max-width: 40rem;
+  }
+  .erro p:not(.rotulo) {
+    color: var(--pc-tinta-suave);
+  }
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+</style>

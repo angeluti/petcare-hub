@@ -1,0 +1,118 @@
+---
+import Marca from './Marca.astro';
+import SeloHarpia from './SeloHarpia.astro';
+import BotaoDemo from './BotaoDemo.astro';
+import { SITE, whatsappFormatado } from '../config';
+
+const ano = new Date().getFullYear();
+---
+
+<footer class="rodape faixa">
+  <div class="recipiente grade">
+    <div class="marca-bloco">
+      <Marca />
+      <SeloHarpia />
+      <p>Atendimento e gestão para pet shops. Sede em Valinhos-SP, atendimento em todo o Brasil.</p>
+    </div>
+
+    <nav aria-label="Rodapé" class="colunas">
+      <div>
+        <p class="rotulo">Produto</p>
+        <ul>
+          <li><a href="/#como-funciona">Como funciona</a></li>
+          <li><a href="/#modulos">Módulos</a></li>
+          <li><a href="/#planos">Planos</a></li>
+          <li><a href={SITE.appUrl}>Entrar no painel</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="rotulo">Legal</p>
+        <ul>
+          <li><a href="/termos">Termos de uso</a></li>
+          <li><a href="/privacidade">Política de privacidade</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="rotulo">Comercial</p>
+        <ul>
+          <li><BotaoDemo origem="rodape" classe="link-demo" icone={false}>Agendar demonstração</BotaoDemo></li>
+          <li class="numero">WhatsApp {whatsappFormatado()}</li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+  <div class="recipiente base">
+    <p>© {ano} {SITE.empresa}. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<style>
+  .rodape {
+    border-top: 1px solid var(--pc-linha);
+    background: var(--pc-superficie);
+    padding-block: 3rem 2rem;
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr);
+    gap: 2.5rem;
+  }
+
+  .marca-bloco {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    max-width: 34ch;
+  }
+
+  .colunas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .colunas ul {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .colunas a,
+  .colunas :global(.link-demo) {
+    color: var(--pc-tinta);
+    text-decoration: none;
+  }
+
+  .colunas a:hover,
+  .colunas :global(.link-demo:hover) {
+    color: var(--pc-azul);
+    text-decoration: underline;
+  }
+
+  .numero {
+    font-family: var(--pc-fonte-mono);
+    font-size: var(--pc-t-xs);
+    user-select: all;
+  }
+
+  .base {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--pc-linha);
+    font-size: var(--pc-t-xs);
+  }
+
+  @media (max-width: 760px) {
+    .grade {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .colunas {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

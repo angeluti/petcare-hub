@@ -1,0 +1,155 @@
+---
+/**
+ * Espaço do vídeo do bot (SI-01).
+ * - Com VIDEO_DEMO.src preenchido: mostra o vídeo (arquivo próprio em public/video/, sem player de terceiros).
+ * - Sem vídeo: mostra o convite para a demonstração ao vivo. A âncora #demonstracao também é o
+ *   destino dos botões enquanto o número comercial não estiver configurado.
+ */
+import BotaoDemo from './BotaoDemo.astro';
+import { VIDEO_DEMO } from '../data/conteudo';
+import { whatsappFormatado } from '../config';
+
+const temVideo = VIDEO_DEMO.src !== '';
+---
+
+<section id="demonstracao" class="secao faixa" aria-labelledby="t-video">
+  <div class="recipiente grade">
+    <div class="texto">
+      <p class="rotulo">Veja funcionando</p>
+      <h2 id="t-video">{temVideo ? 'Um agendamento do começo ao fim.' : 'Quer ver ao vivo? Mande um “oi”.'}</h2>
+      <p>
+        {temVideo
+          ? VIDEO_DEMO.legenda
+          : 'Na demonstração você conversa com o atendente como se fosse um cliente, marca um horário e vê a agenda do painel mudar na hora.'}
+      </p>
+      <div class="acoes">
+        <BotaoDemo origem="video" />
+        <span class="numero">WhatsApp comercial: <span>{whatsappFormatado()}</span></span>
+      </div>
+    </div>
+
+    {temVideo ? (
+      <video
+        class="quadro"
+        src={VIDEO_DEMO.src}
+        poster={VIDEO_DEMO.poster || undefined}
+        controls
+        playsinline
+        preload="metadata"
+      />
+    ) : (
+      <div class="quadro vazio" role="img" aria-label="Espaço reservado para o vídeo do atendente no WhatsApp">
+        <div class="fila">
+          <span class="h">09:00</span><span class="b ocupado">Thor · Banho · M</span>
+          <span class="h">09:30</span><span class="b ocupado">Mel · Banho e tosa · P</span>
+          <span class="h">10:30</span><span class="b">livre</span>
+          <span class="h">11:00</span><span class="b ocupado">Bidu · Hidratação · G</span>
+          <span class="h">14:00</span><span class="b">livre</span>
+        </div>
+        <p class="legenda-quadro">Agenda da Ana · terça</p>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .grade {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  .texto {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .texto > p:not(.rotulo) {
+    color: var(--pc-tinta-suave);
+    max-width: 48ch;
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .numero {
+    font-size: var(--pc-t-sm);
+    color: var(--pc-tinta-suave);
+  }
+
+  .numero span {
+    font-family: var(--pc-fonte-mono);
+    color: var(--pc-tinta);
+    user-select: all;
+  }
+
+  .quadro {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: var(--pc-raio);
+    border: 1px solid var(--pc-linha);
+    background: var(--pc-superficie);
+    box-shadow: var(--pc-sombra);
+  }
+
+  .vazio {
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    padding: clamp(1.25rem, 4vw, 2rem);
+  }
+
+  .fila {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.45rem 0.9rem;
+    align-items: center;
+    font-size: var(--pc-t-sm);
+  }
+
+  .h {
+    font: 500 var(--pc-t-xs) / 1 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .b {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--pc-raio-sm);
+    border: 1px dashed var(--pc-linha);
+    color: var(--pc-tinta-suave);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .b.ocupado {
+    border: 0;
+    border-left: 3px solid var(--pc-azul);
+    background: var(--pc-azul-claro);
+    color: var(--pc-tinta);
+  }
+
+  .legenda-quadro {
+    font: 500 var(--pc-t-xs) / 1 var(--pc-fonte-mono);
+    color: var(--pc-tinta-suave);
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 960px) {
+    .grade {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .vazio {
+      aspect-ratio: auto;
+    }
+  }
+</style>

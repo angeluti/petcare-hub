@@ -1,0 +1,214 @@
+/* Base do site. Cores e fontes vêm de packages/brand/tokens.css (--pc-*). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--pc-espuma);
+  color: var(--pc-tinta);
+  font-family: var(--pc-fonte-texto);
+  font-size: var(--pc-t-base);
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--pc-fonte-display);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+h1 { font-size: var(--pc-t-3xl); }
+h2 { font-size: var(--pc-t-2xl); }
+h3 { font-size: var(--pc-t-lg); }
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+a {
+  color: var(--pc-azul);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: var(--pc-azul-forte);
+}
+
+:focus-visible {
+  outline: 3px solid var(--pc-azul);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Container com gutter que respeita a área segura do celular */
+.faixa {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.recipiente {
+  width: 100%;
+  max-width: var(--pc-largura);
+  margin-inline: auto;
+}
+
+.secao {
+  padding-block: clamp(3.5rem, 8vw, 6rem);
+}
+
+.rotulo {
+  font-family: var(--pc-fonte-mono);
+  font-size: var(--pc-t-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pc-tinta-suave);
+}
+
+.lead {
+  font-size: var(--pc-t-lg);
+  color: var(--pc-tinta-suave);
+  max-width: 38ch;
+}
+
+.cabeca-secao {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 44rem;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.cabeca-secao p {
+  color: var(--pc-tinta-suave);
+  max-width: 60ch;
+}
+
+/* Botões */
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 48px;
+  padding: 0.7rem 1.35rem;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  font: 600 1rem/1.2 var(--pc-fonte-texto);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.botao:active {
+  transform: translateY(1px);
+}
+
+.botao-principal {
+  background: var(--pc-azul);
+  color: var(--pc-sobre-azul);
+}
+
+.botao-principal:hover {
+  background: var(--pc-azul-forte);
+  color: var(--pc-sobre-azul);
+}
+
+.botao-contorno {
+  border-color: var(--pc-linha);
+  color: var(--pc-tinta);
+  background: var(--pc-superficie);
+}
+
+.botao-contorno:hover {
+  border-color: var(--pc-azul);
+  color: var(--pc-azul);
+}
+
+.botao svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+}
+
+/* Selos de status */
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font: 500 var(--pc-t-xs) / 1.4 var(--pc-fonte-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.selo-disponivel {
+  background: var(--pc-toalha);
+  color: var(--pc-sobre-toalha);
+}
+
+.selo-breve {
+  border: 1px solid var(--pc-linha);
+  color: var(--pc-tinta-suave);
+}
+
+.pular {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  background: var(--pc-azul);
+  color: var(--pc-sobre-azul);
+  border-radius: var(--pc-raio-sm);
+}
+
+.pular:focus {
+  top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+}
+
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
