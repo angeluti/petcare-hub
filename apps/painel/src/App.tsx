@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { useSessao } from './contexto/Sessao';
 import { PetshopProvider, usePetshop } from './contexto/PetshopAtual';
 import { Layout, itensVisiveis } from './componentes/Layout';
@@ -10,9 +10,12 @@ import { Configuracao } from './paginas/Configuracao';
 export function App() {
   const { sessao, carregando, recuperandoSenha } = useSessao();
 
+  const { pathname } = useLocation();
+
   if (carregando) return <div className="tela-centro"><div className="carregando">Carregando…</div></div>;
-  if (recuperandoSenha || window.location.pathname === '/redefinir-senha') return <RedefinirSenha />;
+  // Sem sessão é sempre login, mesmo em /redefinir-senha (link vencido ou depois de sair).
   if (!sessao) return <Login />;
+  if (recuperandoSenha || pathname === '/redefinir-senha') return <RedefinirSenha />;
 
   return (
     <PetshopProvider>

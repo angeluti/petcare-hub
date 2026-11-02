@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router';
 import { useSessao } from '../contexto/Sessao';
 
 export function Login() {
@@ -52,42 +53,35 @@ export function Login() {
 }
 
 export function RedefinirSenha() {
-  const { sessao } = useSessao();
+  const { concluirRecuperacao } = useSessao();
+  const navigate = useNavigate();
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
   async function salvar(e: FormEvent) {
     e.preventDefault();
     setErro(null);
     if (senha.length < 8) { setErro('Use pelo menos 8 caracteres.'); return; }
+    setSalvando(true);
     const { error } = await supabase.auth.updateUser({ password: senha });
-    if (error) setErro(error.message);
-    else { setOk(true); window.history.replaceState(null, '', '/agenda'); }
+    setSalvando(false);
+    if (error) { setErro(error.message); return; }
+    // Sai do modo de recuperação pelo roteador: o App re-renderiza e mostra o painel.
+    concluirRecuperacao();
+    navigate('/agenda', { replace: true });
   }
 
-  if (!sessao) {
-    return <div className="tela-centro"><div className="carregando">Validando link…</div></div>;
-  }
   return (
     <div className="tela-centro login-fundo">
       <form className="cartao estreito login" onSubmit={salvar}>
         <h2>Criar nova senha</h2>
-        {ok ? (
-          <>
-            <p className="ok-texto">Senha alterada.</p>
-            <a className="btn primario cheio" href="/agenda">Ir para a agenda</a>
-          </>
-        ) : (
-          <>
-            <label className="campo">
-              <span className="campo-rotulo">Nova senha</span>
-              <input type="password" autoComplete="new-password" value={senha} onChange={(e) => setSenha(e.target.value)} />
-            </label>
-            {erro && <p className="erro-texto">{erro}</p>}
-            <button className="btn primario cheio">Salvar</button>
-          </>
-        )}
+        <label className="campo">
+          <span className="campo-rotulo">Nova senha</span>
+          <input type="password" autoComplete="new-password" value={senha} onChange={(e) => setSenha(e.target.value)} autoFocus />
+        </label>
+        {erro && <p className="erro-texto">{erro}</p>}
+        <button className="btn primario cheio" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar e entrar'}</button>
       </form>
     </div>
   );

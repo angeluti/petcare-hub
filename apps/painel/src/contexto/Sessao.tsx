@@ -7,6 +7,8 @@ interface SessaoCtx {
   carregando: boolean;
   /** true quando o usuário chegou pelo link de "esqueci a senha" */
   recuperandoSenha: boolean;
+  /** chamado depois de salvar a nova senha */
+  concluirRecuperacao: () => void;
   sair: () => Promise<void>;
 }
 
@@ -30,11 +32,20 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  const concluirRecuperacao = () => setRecuperandoSenha(false);
+
+  // Sair recarrega a página na raiz: zera a URL (inclusive /redefinir-senha)
+  // e o cache do React Query, para o próximo usuário não ver dados do anterior.
   const sair = async () => {
     await supabase.auth.signOut();
+    window.location.replace('/');
   };
 
-  return <Ctx.Provider value={{ sessao, carregando, recuperandoSenha, sair }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ sessao, carregando, recuperandoSenha, concluirRecuperacao, sair }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useSessao() {
