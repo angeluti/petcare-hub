@@ -1,6 +1,4 @@
 ---
-import Marca from './Marca.astro';
-import SeloHarpia from './SeloHarpia.astro';
 import BotaoDemo from './BotaoDemo.astro';
 import { SITE, whatsappFormatado } from '../config';
 
@@ -10,8 +8,17 @@ const ano = new Date().getFullYear();
 <footer class="rodape faixa">
   <div class="recipiente grade">
     <div class="marca-bloco">
-      <Marca />
-      <SeloHarpia />
+      <!-- Logo com o selo "by Harpia Tech Studio" do pacote de marca, sem alteração. -->
+      <picture class="logo-selo">
+        <source srcset="/logo/logo-selo-escuro.svg" media="(prefers-color-scheme: dark)" />
+        <img
+          src="/logo/logo-selo-cor.svg"
+          alt="PetCare Hub by Harpia Tech Studio"
+          width="248"
+          height="64"
+          loading="lazy"
+        />
+      </picture>
       <p>Atendimento e gestão para pet shops. Sede em Valinhos-SP, atendimento em todo o Brasil.</p>
     </div>
 
@@ -55,6 +62,16 @@ const ano = new Date().getFullYear();
     color: var(--pc-tinta-suave);
   }
 
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .rodape {
+      background: var(--pc-espuma);
+    }
+  }
+
+  :global(:root[data-theme='dark']) .rodape {
+    background: var(--pc-espuma);
+  }
+
   .grade {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr);
@@ -63,9 +80,25 @@ const ano = new Date().getFullYear();
 
   .marca-bloco {
     display: grid;
-    gap: 0.6rem;
+    gap: 1rem;
     align-content: start;
     max-width: 34ch;
+  }
+
+  /*
+    Área de proteção: 1/4 da largura do símbolo (~12 px a 64 px de altura).
+    O gap de 1rem abaixo e a margem do rodapé garantem o espaço; o SVG já tem respiro interno.
+  */
+  .logo-selo,
+  .logo-selo img {
+    display: block;
+    line-height: 0;
+  }
+
+  .logo-selo img {
+    height: 64px;
+    width: auto;
+    max-width: 100%;
   }
 
   .colunas {

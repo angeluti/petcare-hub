@@ -22,6 +22,9 @@ const tituloCompleto = titulo ? `${titulo} · ${SITE.nome}` : `${SITE.nome} · A
 const caminho = Astro.url.pathname.replace(/\/$/, '') || '/';
 const canonical = new URL(caminho, SITE.url).toString();
 const imagemOg = new URL('/og.png', SITE.url).toString();
+// Descreve o que está escrito no og.png. Se trocar a imagem, atualize este texto.
+const OG_IMAGEM_ALT =
+  'Logo do PetCare Hub by Harpia Tech Studio, a frase "Seu pet shop marca banho e tosa até de madrugada." e uma conversa no WhatsApp em que um tutor marca banho às 23h47 de domingo.';
 ---
 
 <!doctype html>
@@ -43,9 +46,13 @@ const imagemOg = new URL('/og.png', SITE.url).toString();
     <meta property="og:image" content={imagemOg} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={OG_IMAGEM_ALT} />
+    <meta name="twitter:image:alt" content={OG_IMAGEM_ALT} />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="theme-color" content="#f3f7f8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b1524" media="(prefers-color-scheme: dark)" />

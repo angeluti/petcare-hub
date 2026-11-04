@@ -1,7 +1,5 @@
 ---
-import Marca from './Marca.astro';
 import BotaoDemo from './BotaoDemo.astro';
-import SeloHarpia from './SeloHarpia.astro';
 import { SITE } from '../config';
 
 const links = [
@@ -14,10 +12,13 @@ const links = [
 
 <header class="topo faixa">
   <div class="recipiente barra">
-    <a href="/" class="link-marca" aria-label="PetCare Hub, página inicial">
-      <Marca />
+    <!-- Logo do pacote de marca, sem alteração. Cor em fundo claro, escuro no tema escuro. -->
+    <a href="/" class="link-marca">
+      <picture>
+        <source srcset="/logo/logo-horizontal-escuro.svg" media="(prefers-color-scheme: dark)" />
+        <img src="/logo/logo-horizontal-cor.svg" alt="PetCare Hub, página inicial" width="161" height="40" />
+      </picture>
     </a>
-    <span class="selo-topo"><SeloHarpia /></span>
 
     <nav aria-label="Principal" class="nav">
       <ul>
@@ -62,24 +63,29 @@ const links = [
     min-height: 68px;
   }
 
+  /*
+    Área de proteção (README do pacote): 1/4 da largura do símbolo em volta.
+    O símbolo ocupa ~74% da altura do SVG; a 40 px de altura, a proteção é ~7,5 px.
+    O SVG já traz ~8–12% de respiro interno; os gaps da barra (24 px, ou 12 px no celular)
+    e a altura de 68 px completam o resto. Não reduzir esses espaços sem refazer a conta.
+  */
   .link-marca {
-    text-decoration: none;
+    --logo-h: 40px;
+    display: block;
     flex: none;
+    line-height: 0;
+    border-radius: 6px;
   }
 
-  .selo-topo {
-    margin-left: -0.75rem;
-    padding-top: 0.35rem;
+  .link-marca img {
+    display: block;
+    height: var(--logo-h);
+    width: auto;
+    max-width: none;
   }
 
   .nav {
     flex: 1;
-  }
-
-  @media (max-width: 1100px) {
-    .selo-topo {
-      display: none;
-    }
   }
 
   .nav ul {
@@ -141,9 +147,10 @@ const links = [
     }
   }
 
-  @media (max-width: 380px) {
-    .link-marca :global(.nome) {
-      font-size: 1.05rem;
+  @media (max-width: 520px) {
+    /* 32 px: símbolo com ~24 px, o mínimo com detalhes pelo README */
+    .link-marca {
+      --logo-h: 32px;
     }
   }
 </style>

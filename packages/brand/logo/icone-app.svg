@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="PetCare Hub">
+  <title>PetCare Hub</title>
+  <rect width="100" height="100" rx="22" fill="#f3f7f8"/>
+  <path d="M60 27L75 11L80 33Z" fill="#10213a" stroke="#10213a" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M50 26H32Q18 26 18 40V74Q18 88 32 88H50Z" fill="#1f5fd6"/>
+  <path d="M50 26H68Q82 26 82 40V74Q82 88 68 88H50Z" fill="#10213a"/>
+  <path d="M50 61C41 61 33 65 33 72C33 79 41 82 50 82Z" fill="#e2ecfb"/>
+  <path d="M40 27C30 21 15 23 11 35C8 46 9 59 14 64C19 68 24 63 24 55C24 44 30 33 40 27Z" fill="#174aa8" stroke="#f3f7f8" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="38" cy="50" r="4" fill="#f3f7f8"/>
+  <ellipse cx="63" cy="50" rx="3" ry="4.6" fill="#ffffff"/>
+  <path d="M64 66L80 63M64 71L80 73" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M50 68.5V72M50 72Q46.5 75.5 43 72" fill="none" stroke="#10213a" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M50 72Q53.5 75.5 57 72" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M44.5 62.5Q50 60.5 55.5 62.5Q53.5 68 50 68.5Q46.5 68 44.5 62.5Z" fill="#f2b83a"/>
+</svg>
