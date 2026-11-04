@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router';
 import { useSessao } from '../contexto/Sessao';
+import { Logo } from '../componentes/Logo';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -31,8 +32,8 @@ export function Login() {
   return (
     <div className="tela-centro login-fundo">
       <form className="cartao estreito login" onSubmit={entrar}>
-        <div className="marca grande">
-          <span className="marca-nome">PetCare Hub</span>
+        <div className="marca-login">
+          <Logo tipo="horizontal" altura={56} />
           <span className="marca-sub">Painel do pet shop</span>
         </div>
         <label className="campo">

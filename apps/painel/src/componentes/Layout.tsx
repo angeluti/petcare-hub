@@ -3,6 +3,7 @@
 import { NavLink, Outlet } from 'react-router';
 import { usePetshop } from '../contexto/PetshopAtual';
 import { useSessao } from '../contexto/Sessao';
+import { Logo } from './Logo';
 
 interface ItemMenu { to: string; rotulo: string; icone: string; exige?: string; soConfig?: boolean }
 
@@ -35,10 +36,11 @@ export function Layout() {
   return (
     <div className="app">
       <aside className="lateral">
-        <div className="marca">
-          <span className="marca-nome">PetCare Hub</span>
-          <span className="marca-sub">by Harpia Tech Studio</span>
-        </div>
+        {/* Sidebar aberta (desktop): logo horizontal. Recolhida (barra do celular): só o símbolo. */}
+        <NavLink to="/" className="marca" aria-label="PetCare Hub, início">
+          <Logo tipo="horizontal" altura={40} className="marca-horizontal" />
+          <Logo tipo="simbolo" altura={32} className="marca-simbolo" />
+        </NavLink>
 
         {vinculos.length > 1 ? (
           <select className="seletor-petshop" value={petshop.id} onChange={(e) => trocar(e.target.value)} aria-label="Pet shop">

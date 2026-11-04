@@ -5,6 +5,11 @@ import { BrowserRouter } from 'react-router';
 import { App } from './App';
 import { SessaoProvider } from './contexto/Sessao';
 import { AvisosProvider } from './componentes/ui';
+// Fontes locais da marca (sem Google Fonts: LGPD e sem depender de outro domínio)
+import '@fontsource/young-serif/400.css';
+import '@fontsource-variable/figtree/index.css';
+// Tokens de marca compartilhados com o site (petcare-hub/packages/brand)
+import '../../../packages/brand/tokens.css';
 import './estilo.css';
 
 const queryClient = new QueryClient({
