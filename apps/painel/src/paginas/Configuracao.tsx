@@ -9,18 +9,24 @@ import { PORTES, moeda } from '../lib/formato';
 import { DIAS_SEMANA } from '../lib/tempo';
 import type { HorarioFuncionamento, Recurso, Servico } from '../lib/tipos';
 import { Campo, Carregando, useAvisos } from '../componentes/ui';
+import { AbaPetshop } from './config/AbaPetshop';
+import { AbaBloqueios } from './config/AbaBloqueios';
+import { AbaAcessos } from './config/AbaAcessos';
 
-type Aba = 'geral' | 'horarios' | 'profissionais' | 'servicos' | 'bot';
+type Aba = 'petshop' | 'geral' | 'horarios' | 'bloqueios' | 'profissionais' | 'servicos' | 'bot' | 'acessos';
 
 export function Configuracao() {
-  const { tem } = usePetshop();
-  const [aba, setAba] = useState<Aba>('servicos');
+  const { tem, papel } = usePetshop();
+  const [aba, setAba] = useState<Aba>('petshop');
   const abas: [Aba, string][] = [
+    ['petshop', 'Pet shop'],
     ['servicos', 'Serviços e preços'],
     ['horarios', 'Horários'],
+    ['bloqueios', 'Feriados e bloqueios'],
     ['profissionais', 'Profissionais'],
     ...(tem('spa.bot') ? ([['bot', 'Bot do WhatsApp']] as [Aba, string][]) : []),
     ['geral', 'Regras da agenda'],
+    ...(papel === 'super_admin' ? ([['acessos', 'Acessos']] as [Aba, string][]) : []),
   ];
   return (
     <div className="pagina">
@@ -30,7 +36,10 @@ export function Configuracao() {
           <button key={id} role="tab" aria-selected={aba === id} className={aba === id ? 'ativo' : ''} onClick={() => setAba(id)}>{rotulo}</button>
         ))}
       </nav>
+      {aba === 'petshop' && <AbaPetshop />}
       {aba === 'servicos' && <AbaServicos />}
+      {aba === 'bloqueios' && <AbaBloqueios />}
+      {aba === 'acessos' && <AbaAcessos />}
       {aba === 'horarios' && <AbaHorarios />}
       {aba === 'profissionais' && <AbaProfissionais />}
       {aba === 'bot' && <AbaBot />}
@@ -461,8 +470,6 @@ function AbaGeral() {
   const qc = useQueryClient();
   const avisar = useAvisos();
   const [f, setF] = useState({
-    nome: petshop.nome,
-    endereco: petshop.endereco ?? '',
     intervalo_slot_min: String(petshop.intervalo_slot_min),
     antecedencia_min_minutos: String(petshop.antecedencia_min_minutos),
     antecedencia_max_dias: String(petshop.antecedencia_max_dias),
@@ -475,12 +482,9 @@ function AbaGeral() {
 
   async function salvar() {
     setErro(null);
-    if (!f.nome.trim()) return setErro('Informe o nome.');
     setSalvando(true);
     try {
       dado(await supabase.from('petshops').update({
-        nome: f.nome.trim(),
-        endereco: f.endereco.trim() || null,
         intervalo_slot_min: Number(f.intervalo_slot_min),
         antecedencia_min_minutos: Number(f.antecedencia_min_minutos),
         antecedencia_max_dias: Number(f.antecedencia_max_dias),
@@ -501,10 +505,6 @@ function AbaGeral() {
   return (
     <div className="aba-corpo">
       <div className="linha-campos">
-        <Campo rotulo="Nome do pet shop"><input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></Campo>
-        <Campo rotulo="Endereço" largo><input value={f.endereco} onChange={(e) => setF({ ...f, endereco: e.target.value })} /></Campo>
-      </div>
-      <div className="linha-campos">
         <Campo rotulo="Grade de horários" dica="De quanto em quanto tempo o motor oferece horários">
           <select value={f.intervalo_slot_min} onChange={(e) => setF({ ...f, intervalo_slot_min: e.target.value })}>
             {[10, 15, 20, 30, 60].map((m) => <option key={m} value={m}>{m} min</option>)}
@@ -520,7 +520,7 @@ function AbaGeral() {
           <option value="multiplo">Múltiplo: até X pets por profissional</option>
         </select>
       </Campo>
-      <p className="mudo">Fuso: {petshop.fuso} · Plano e número do WhatsApp só a equipe PetCare Hub altera.</p>
+      <p className="mudo">Fuso: {petshop.fuso}. Nome, endereço, telefone e logo ficam na aba Pet shop.</p>
       {erro && <p className="erro-texto">{erro}</p>}
       <div className="acoes-linha">
         <button className="btn primario" disabled={salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar regras'}</button>

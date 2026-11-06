@@ -16,6 +16,42 @@ export interface Petshop {
   antecedencia_max_dias: number;
   cancelamento_min_horas: number;
   endereco: string | null;
+  telefone_contato: string | null;
+  logo_url: string | null;
+  // Só leitura para o dono (trigger private.proteger_petshop): só a Harpia altera
+  slug: string | null;
+  telefone_wp: string | null;
+  ativo: boolean;
+}
+
+export type TipoBloqueio = 'feriado' | 'folga' | 'almoco' | 'manutencao' | 'outro';
+
+export const TIPO_BLOQUEIO_ROTULO: Record<TipoBloqueio, string> = {
+  feriado: 'Feriado',
+  folga: 'Folga',
+  almoco: 'Almoço',
+  manutencao: 'Manutenção',
+  outro: 'Compromisso',
+};
+
+/** recurso_id nulo = pet shop inteiro (feriado, dia fechado). */
+export interface Bloqueio {
+  id: string;
+  recurso_id: string | null;
+  tipo: TipoBloqueio;
+  inicio: string;
+  fim: string;
+  motivo: string | null;
+  recursos: { nome: string } | null;
+}
+
+export interface Membro {
+  id: string;
+  user_id: string;
+  nome: string | null;
+  papel: Papel;
+  ativo: boolean;
+  criado_em: string;
 }
 
 export type StatusAgendamento =

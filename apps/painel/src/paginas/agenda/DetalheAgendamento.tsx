@@ -7,13 +7,13 @@ import { useHorariosDisponiveis, useRecursos } from '../../lib/consultas';
 import { checkin, checkout, mudarStatus, remarcar, salvarObservacoes } from '../../lib/acoes';
 import { ehConflitoDeHorario, mensagemDeErro } from '../../lib/erros';
 import { linkWhatsApp, moeda, telefone } from '../../lib/formato';
-import { diaDe, duracaoMin, hora, instante, rotuloDia, somarMinutos, type Dia } from '../../lib/tempo';
-import { STATUS_ROTULO, type AgendamentoLista, type StatusAgendamento } from '../../lib/tipos';
+import { diaDe, duracaoMin, hora, instante, rotuloDia, rotuloPeriodo, somarMinutos, type Dia } from '../../lib/tempo';
+import { STATUS_ROTULO, TIPO_BLOQUEIO_ROTULO, type AgendamentoLista, type Bloqueio, type StatusAgendamento } from '../../lib/tipos';
 import { Campo, Carregando, Modal, useAvisos } from '../../componentes/ui';
 
 type Painel = null | 'remarcar' | 'cancelar' | 'checkout';
 
-export function DetalheAgendamento({ ag, aoFechar }: { ag: AgendamentoLista; aoFechar: () => void }) {
+export function DetalheAgendamento({ ag, bloqueio, aoFechar }: { ag: AgendamentoLista; bloqueio?: Bloqueio; aoFechar: () => void }) {
   const { petshop, tem, podeConfigurar } = usePetshop();
   const fuso = petshop.fuso;
   const qc = useQueryClient();
@@ -59,6 +59,14 @@ export function DetalheAgendamento({ ag, aoFechar }: { ag: AgendamentoLista; aoF
           <span className="chip">pagamento: {ag.pagamento_status}</span>
         </div>
 
+        {bloqueio && (
+          <p className="alerta">
+            ⚠ Este horário caiu num período bloqueado ({TIPO_BLOQUEIO_ROTULO[bloqueio.tipo]}
+            {bloqueio.recurso_id ? ` de ${bloqueio.recursos?.nome ?? 'profissional'}` : ' do pet shop'},{' '}
+            {rotuloPeriodo(bloqueio.inicio, bloqueio.fim, petshop.fuso)}{bloqueio.motivo ? `: ${bloqueio.motivo}` : ''}).
+            Remarque ou cancele e avise o tutor.
+          </p>
+        )}
         <dl className="ficha">
           <dt>Quando</dt>
           <dd>{rotuloDia(diaDe(ag.inicio, fuso), fuso)}, {hora(ag.inicio, fuso)}–{hora(ag.fim, fuso)}</dd>

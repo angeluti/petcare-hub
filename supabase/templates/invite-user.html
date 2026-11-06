@@ -1,0 +1,56 @@
+<!--
+  Supabase → Authentication → Emails → Templates → Invite user
+  Assunto: Seu acesso ao PetCare Hub
+  Link: {{ .SiteURL }}/auth/confirmar?token_hash={{ .TokenHash }}&type=invite
+        (o painel troca o token por sessão com verifyOtp e leva a /redefinir-senha)
+  Não usar {{ .ConfirmationURL }}: ele abre sessão direto e o painel entra sem pedir senha.
+  Logo: https://app.petcarehub.com.br/email/logo-horizontal-cor.png (PNG 806×200 gerado do logo-horizontal-cor.svg,
+        servido pelo painel; e-mail não exibe SVG). Publicar o painel antes de usar o template.
+  Cores: packages/brand/tokens.css (azul #1f5fd6, tinta #10213a, espuma #f3f7f8).
+-->
+<!doctype html>
+<html lang="pt-BR">
+  <body style="margin:0;padding:0;background:#f3f7f8;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f7f8;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #d3dfe5;border-radius:14px;">
+            <tr>
+              <td style="padding:24px 32px 8px;">
+                <img src="https://app.petcarehub.com.br/email/logo-horizontal-cor.png" width="200" height="50" alt="PetCare Hub"
+                     style="display:block;border:0;outline:none;width:200px;height:50px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#10213a;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#10213a;">
+                <p style="margin:0 0 14px;font-size:20px;font-weight:bold;">Seu acesso ao painel está pronto</p>
+                <p style="margin:0 0 14px;">Você foi convidado para usar o PetCare Hub, onde fica a agenda e a configuração do seu pet shop.</p>
+                <p style="margin:0 0 22px;">Clique no botão para criar a sua senha. Depois, é só entrar em <b>app.petcarehub.com.br</b> com este e-mail.</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="left" style="padding:0 32px 24px;">
+                <a href="{{ .SiteURL }}/auth/confirmar?token_hash={{ .TokenHash }}&type=invite"
+                   style="display:inline-block;background:#1f5fd6;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;padding:12px 22px;border-radius:8px;">
+                  Criar minha senha
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 28px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#4c6078;">
+                <p style="margin:0 0 8px;">O link vale por tempo limitado e pode ser usado uma vez. Se expirar, peça um novo convite.</p>
+                <p style="margin:0;">Não esperava este e-mail? Pode ignorar: sem abrir o link, ninguém entra com este endereço.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 32px;border-top:1px solid #d3dfe5;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#4c6078;">
+                Dúvidas: <a href="mailto:suporte@petcarehub.com.br" style="color:#1f5fd6;">suporte@petcarehub.com.br</a>.
+                Este e-mail é automático; respostas vão para uma caixa que não é acompanhada todo dia.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

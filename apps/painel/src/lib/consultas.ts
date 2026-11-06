@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase, dado } from './supabase';
 import { faixaDoDia, type Dia } from './tempo';
 import type {
-  AgendamentoLista, BotConfig, HorarioDisponivel, HorarioFuncionamento, PetVinculo, Recurso, Servico, TutorVinculo,
+  AgendamentoLista, Bloqueio, Membro, BotConfig, HorarioDisponivel, HorarioFuncionamento, PetVinculo, Recurso, Servico, TutorVinculo,
 } from './tipos';
 
 export const SELECT_AGENDAMENTO = `
@@ -149,6 +149,73 @@ export function useHorariosDisponiveis(params: {
           ...(recurso ? { p_recurso: recurso } : {}),
           p_aplicar_antecedencia: false, // painel: o dono pode marcar em cima da hora
         }),
+      ),
+  });
+}
+
+const SELECT_BLOQUEIO = 'id, recurso_id, tipo, inicio, fim, motivo, recursos ( nome )';
+
+/** Bloqueios que tocam o intervalo [dia, dia + dias) no fuso do pet shop (agenda dia/semana). */
+export function useBloqueios(petshopId: string, fuso: string, dia: Dia, dias: number) {
+  return useQuery({
+    queryKey: [petshopId, 'bloqueios', dia, dias],
+    queryFn: async () => {
+      const { de, ate } = faixaDoDia(dia, fuso, dias);
+      return dado<Bloqueio[]>(
+        await supabase
+          .from('bloqueios')
+          .select(SELECT_BLOQUEIO)
+          .eq('petshop_id', petshopId)
+          .lt('inicio', ate)
+          .gt('fim', de)
+          .order('inicio'),
+      );
+    },
+  });
+}
+
+/** Bloqueios que ainda não terminaram (lista da Configuração). */
+export function useBloqueiosFuturos(petshopId: string) {
+  return useQuery({
+    queryKey: [petshopId, 'bloqueios', 'futuros'],
+    queryFn: async () =>
+      dado<Bloqueio[]>(
+        await supabase
+          .from('bloqueios')
+          .select(SELECT_BLOQUEIO)
+          .eq('petshop_id', petshopId)
+          .gt('fim', new Date().toISOString())
+          .order('inicio')
+          .limit(200),
+      ),
+  });
+}
+
+/** Agendamentos ativos que caem dentro de um bloqueio (para avisar o dono). */
+export async function agendamentosNoPeriodo(petshopId: string, inicio: string, fim: string, recursoId: string | null) {
+  let q = supabase
+    .from('agendamentos')
+    .select(SELECT_AGENDAMENTO)
+    .eq('petshop_id', petshopId)
+    .not('status', 'in', '(cancelado,no_show,entregue)')
+    .lt('inicio', fim)
+    .gt('fim', inicio)
+    .order('inicio');
+  if (recursoId) q = q.eq('recurso_id', recursoId);
+  return dado<AgendamentoLista[]>(await q);
+}
+
+export function useMembros(petshopId: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: [petshopId, 'membros'],
+    enabled: habilitado,
+    queryFn: async () =>
+      dado<Membro[]>(
+        await supabase
+          .from('petshop_membros')
+          .select('id, user_id, nome, papel, ativo, criado_em')
+          .eq('petshop_id', petshopId)
+          .order('criado_em'),
       ),
   });
 }

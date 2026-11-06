@@ -29,6 +29,17 @@ export function mensagemDeErro(e: unknown): string {
       return 'Registro ligado a outro dado que não existe ou não é deste pet shop.';
     case '23514':
       return 'Valor fora das regras: ' + (err.message ?? '');
+    // Supabase Auth
+    case 'over_email_send_rate_limit':
+      return 'Muitos e-mails enviados em pouco tempo. Espere alguns minutos e tente de novo.';
+    case 'otp_expired':
+      return 'O link expirou ou já foi usado.';
+    case 'same_password':
+      return 'A nova senha precisa ser diferente da atual.';
+    case 'weak_password':
+      return 'Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.';
+    case 'invalid_credentials':
+      return 'E-mail ou senha incorretos.';
     case 'PGRST301':
     case 'PGRST303':
       return 'Sua sessão expirou. Entre de novo.';
@@ -38,6 +49,7 @@ export function mensagemDeErro(e: unknown): string {
       return err.message ?? 'Dados inválidos.';
     default:
       if (err.message?.includes('Failed to fetch')) return 'Sem conexão com o servidor. Verifique a internet.';
+      if (err.message?.toLowerCase().includes('rate limit')) return 'Muitos pedidos em pouco tempo. Espere alguns minutos e tente de novo.';
       return err.message ?? 'Erro inesperado.';
   }
 }

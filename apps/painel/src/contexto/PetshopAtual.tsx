@@ -8,7 +8,7 @@ import type { Papel, Petshop } from '../lib/tipos';
 import { useSessao } from './Sessao';
 
 const CAMPOS_PETSHOP =
-  'id, nome, fuso, plano_codigo, modo_capacidade, intervalo_slot_min, antecedencia_min_minutos, antecedencia_max_dias, cancelamento_min_horas, endereco';
+  'id, nome, fuso, plano_codigo, modo_capacidade, intervalo_slot_min, antecedencia_min_minutos, antecedencia_max_dias, cancelamento_min_horas, endereco, telefone_contato, logo_url, slug, telefone_wp, ativo';
 
 interface Vinculo { petshop: Petshop; papel: Papel }
 

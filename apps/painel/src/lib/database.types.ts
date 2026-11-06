@@ -1319,6 +1319,7 @@ export type Database = {
           nome: string
           plano_codigo: string
           slug: string | null
+          telefone_contato: string | null
           telefone_wp: string | null
         }
         Insert: {
@@ -1337,6 +1338,7 @@ export type Database = {
           nome: string
           plano_codigo?: string
           slug?: string | null
+          telefone_contato?: string | null
           telefone_wp?: string | null
         }
         Update: {
@@ -1355,6 +1357,7 @@ export type Database = {
           nome?: string
           plano_codigo?: string
           slug?: string | null
+          telefone_contato?: string | null
           telefone_wp?: string | null
         }
         Relationships: [
@@ -1930,6 +1933,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_vincular_membro: {
+        Args: {
+          p_email: string
+          p_nome?: string
+          p_papel?: string
+          p_petshop: string
+        }
+        Returns: string
+      }
       bot_agendamentos_tutor: {
         Args: { p_petshop: string; p_tutor: string }
         Returns: Json
@@ -1951,6 +1963,7 @@ export type Database = {
         Args: { p_petshop: string; p_telefone: string }
         Returns: undefined
       }
+      bot_petshop_info: { Args: { p_petshop: string }; Returns: Json }
       bot_petshop_por_instancia: {
         Args: { p_meta_phone_id?: string; p_zapi_instance?: string }
         Returns: string

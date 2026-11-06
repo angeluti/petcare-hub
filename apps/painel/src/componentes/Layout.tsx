@@ -49,7 +49,10 @@ export function Layout() {
             ))}
           </select>
         ) : (
-          <div className="petshop-nome">{petshop.nome}</div>
+          <div className="petshop-nome">
+            {petshop.logo_url && <img src={petshop.logo_url} alt="" width={28} height={28} />}
+            <span>{petshop.nome}</span>
+          </div>
         )}
 
         <nav className="menu">

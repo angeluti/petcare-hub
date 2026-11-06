@@ -70,3 +70,28 @@ export function duracaoMin(inicioIso: string, fimIso: string): number {
 export function somarMinutos(iso: string, min: number): string {
   return new Date(new Date(iso).getTime() + min * 60000).toISOString();
 }
+
+/** true se o instante cai exatamente às 00:00 no fuso do pet shop. */
+export function ehMeiaNoite(iso: string, fuso: string): boolean {
+  return formatInTimeZone(new Date(iso), fuso, 'HH:mm') === '00:00';
+}
+
+/** Texto curto de um período: "seg, 09/11", "09/11 a 12/11" ou "10/11, 08:00–12:00". */
+export function rotuloPeriodo(inicio: string, fim: string, fuso: string): string {
+  const d1 = diaDe(inicio, fuso);
+  if (ehMeiaNoite(inicio, fuso) && ehMeiaNoite(fim, fuso)) {
+    const ultimo = somarDias(diaDe(fim, fuso), -1);
+    return ultimo === d1
+      ? rotuloDia(d1, fuso, "EEE, dd/MM")
+      : `${rotuloDia(d1, fuso, 'dd/MM')} a ${rotuloDia(ultimo, fuso, 'dd/MM')}`;
+  }
+  const d2 = diaDe(fim, fuso);
+  return d2 === d1
+    ? `${rotuloDia(d1, fuso, "EEE, dd/MM")}, ${hora(inicio, fuso)}–${hora(fim, fuso)}`
+    : `${rotuloDia(d1, fuso, 'dd/MM')} ${hora(inicio, fuso)} a ${rotuloDia(d2, fuso, 'dd/MM')} ${hora(fim, fuso)}`;
+}
+
+/** Intervalos se sobrepõem (meio-aberto [ini, fim)). */
+export function sobrepoe(aIni: string, aFim: string, bIni: string, bFim: string): boolean {
+  return new Date(aIni) < new Date(bFim) && new Date(aFim) > new Date(bIni);
+}

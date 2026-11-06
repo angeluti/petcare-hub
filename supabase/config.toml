@@ -1,0 +1,9 @@
+project_id = "petcare-hub"
+
+# Configuração do Supabase CLI para o repositório petcare-hub.
+# Só o necessário para o deploy das Edge Functions; o projeto em si é
+# configurado no painel do Supabase (Auth, SMTP, templates).
+
+[functions.convidar-membro]
+# A função valida o JWT do usuário com auth.getUser e confere o super admin.
+verify_jwt = false

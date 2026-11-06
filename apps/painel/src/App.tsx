@@ -2,20 +2,23 @@ import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { useSessao } from './contexto/Sessao';
 import { PetshopProvider, usePetshop } from './contexto/PetshopAtual';
 import { Layout, itensVisiveis } from './componentes/Layout';
-import { Login, RedefinirSenha } from './paginas/Login';
+import { ConfirmarLink, Login, RedefinirSenha } from './paginas/Login';
 import { Agenda } from './paginas/Agenda';
 import { Clientes } from './paginas/Clientes';
 import { Configuracao } from './paginas/Configuracao';
 
 export function App() {
-  const { sessao, carregando, recuperandoSenha } = useSessao();
+  const { sessao, carregando, definindoSenha } = useSessao();
 
   const { pathname } = useLocation();
 
   if (carregando) return <div className="tela-centro"><div className="carregando">Carregando…</div></div>;
+  // Link do e-mail (convite ou recuperação): troca o token_hash por sessão. Vem antes do login.
+  if (pathname === '/auth/confirmar') return <ConfirmarLink />;
   // Sem sessão é sempre login, mesmo em /redefinir-senha (link vencido ou depois de sair).
   if (!sessao) return <Login />;
-  if (recuperandoSenha || pathname === '/redefinir-senha') return <RedefinirSenha />;
+  // Definir senha exige só sessão: fica FORA do PetshopProvider (checagem de vínculo).
+  if (definindoSenha || pathname === '/redefinir-senha') return <RedefinirSenha />;
 
   return (
     <PetshopProvider>
