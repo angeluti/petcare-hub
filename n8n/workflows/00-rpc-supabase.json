@@ -1,0 +1,117 @@
+{
+  "name": "PetCare · RPC Supabase",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "65f971fb-85dd-452c-9848-d6ba3c113fc6",
+      "name": "Ao ser chamado",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://SEU-PROJETO.supabase.co/rest/v1/rpc/{{ $json.proximo.fn }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.proximo.args || {}) }}"
+      },
+      "id": "c85b347a-4586-45b3-ac1c-be70f517056a",
+      "name": "Chamar RPC",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "TROCAR",
+          "name": "Supabase · secret n8n-bot"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Junta a resposta da RPC ao contexto que chegou, em resultados[chave].\n// Conflito de horário chega como HTTP 400 com body.code = \"23P01\":\n// quem decide é quem chamou, sempre pelo code.\nconst entradas = $('Ao ser chamado').all();\nreturn $input.all().map((r, i) => {\n  const ctx = entradas[i].json;\n  const p = ctx.proximo || {};\n  const j = r.json || {};\n  const res = j.statusCode !== undefined\n    ? { status: j.statusCode, body: j.body === undefined || j.body === '' ? null : j.body }\n    : { status: 0, body: { code: 'REDE', message: String((j.error && j.error.message) || JSON.stringify(j)).slice(0, 300) } };\n  const { proximo, ...resto } = ctx;\n  return { json: { ...resto, resultados: { ...(ctx.resultados || {}), [p.chave || p.fn]: res }, passos: (ctx.passos || 0) + 1 } };\n});\n"
+      },
+      "id": "6146a62c-ea7e-4515-b048-c39b6420f8a5",
+      "name": "Guardar resultado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## RPC Supabase\nChama `POST /rest/v1/rpc/<fn>` com a secret key `n8n-bot` (header **apikey**, sem Bearer).\nEntrada: `proximo = { chave, fn, args }`. Saída: o mesmo item com `resultados[chave] = { status, body }`.\n\n**Troque `SEU-PROJETO` no nó Chamar RPC.** É o único lugar com o endereço do Supabase.",
+        "height": 240,
+        "width": 520
+      },
+      "id": "99e57065-833c-40f1-a2a2-da4685876760",
+      "name": "Nota a8e7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ]
+    }
+  ],
+  "connections": {
+    "Ao ser chamado": {
+      "main": [
+        [
+          {
+            "node": "Chamar RPC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar RPC": {
+      "main": [
+        [
+          {
+            "node": "Guardar resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

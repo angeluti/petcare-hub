@@ -1,0 +1,1236 @@
+<title>Bot PetCare no N8n</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: guia de execução em abas; coluna de leitura de 820px, código em blocos largos com cópia.
+   Tokens do packages/brand/tokens.css do PetCare Hub (azul, tinta, espuma, toalha). */
+:root {
+  --azul: #1f5fd6;
+  --azul-claro: #e4ecfb;
+  --tinta: #10213a;
+  --tinta-suave: #4d5d75;
+  --espuma: #f3f7f8;
+  --papel: #ffffff;
+  --linha: #d9e2ea;
+  --toalha: #f2b83a;
+  --toalha-claro: #fdf2d8;
+  --ok: #1d7a4f;
+  --ok-claro: #e2f3ea;
+  --codigo-fundo: #10213a;
+  --codigo-texto: #dfe8f7;
+  --f-titulo: "Young Serif", Georgia, "Times New Roman", serif;
+  --f-texto: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --azul: #7ea6ff; --azul-claro: #1b2b4a; --tinta: #e6edf6; --tinta-suave: #9fb0c8;
+    --espuma: #0c1626; --papel: #13223a; --linha: #263852; --toalha: #f2b83a; --toalha-claro: #33280f;
+    --ok: #63d39b; --ok-claro: #12301f; --codigo-fundo: #070f1c; --codigo-texto: #d3def2; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --azul: #7ea6ff; --azul-claro: #1b2b4a; --tinta: #e6edf6; --tinta-suave: #9fb0c8;
+  --espuma: #0c1626; --papel: #13223a; --linha: #263852; --toalha: #f2b83a; --toalha-claro: #33280f;
+  --ok: #63d39b; --ok-claro: #12301f; --codigo-fundo: #070f1c; --codigo-texto: #d3def2; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--espuma); color: var(--tinta); font-family: var(--f-texto); font-size: 16px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--espuma); }
+.wrap { max-width: 980px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 72px; }
+header.topo { display: grid; gap: 8px; }
+.sobre { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-suave); }
+.sobre b { color: var(--azul); font-weight: 500; }
+h1 { font-family: var(--f-titulo); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 span { color: var(--azul); }
+.lede { margin: 0; max-width: 66ch; color: var(--tinta-suave); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip { font-family: var(--f-mono); font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--linha); background: var(--papel); color: var(--tinta-suave); }
+.chip.ok { background: var(--ok-claro); color: var(--ok); border-color: transparent; }
+.chip.pend { background: var(--toalha-claro); color: var(--tinta); border-color: transparent; }
+nav.abas { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--espuma); display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--linha); margin-top: 22px; scrollbar-width: thin; }
+nav.abas button { font: 600 14px var(--f-texto); padding: 12px 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--tinta-suave); cursor: pointer; white-space: nowrap; }
+nav.abas button small { font-family: var(--f-mono); font-weight: 400; font-size: 11px; opacity: .8; margin-right: 4px; }
+nav.abas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--azul); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+section.painel { padding-top: 28px; display: grid; gap: 22px; }
+section.painel > * { min-width: 0; }
+h2 { font-family: var(--f-titulo); font-weight: 400; font-size: 24px; margin: 6px 0 0; text-wrap: balance; }
+h3 { font-size: 16px; font-weight: 700; margin: 0; }
+p { margin: 0; max-width: 70ch; }
+.prosa { display: grid; gap: 10px; }
+.prosa ul, .prosa ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 72ch; }
+code { font-family: var(--f-mono); font-size: .86em; background: var(--azul-claro); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.aviso { border-left: 4px solid var(--toalha); background: var(--toalha-claro); padding: 12px 14px; border-radius: 0 8px 8px 0; max-width: 78ch; display: grid; gap: 6px; }
+.aviso.ok { border-color: var(--ok); background: var(--ok-claro); }
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.cartao { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.cartao .k { font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--azul); }
+.tabela { overflow-x: auto; border: 1px solid var(--linha); border-radius: 10px; background: var(--papel); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: 12px; font-weight: 500; color: var(--tinta-suave); background: var(--espuma); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+/* fluxo */
+.fluxo { display: grid; gap: 0; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.fluxo .f { display: grid; grid-template-columns: 170px 1fr; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--linha); }
+.fluxo .f:last-child { border-bottom: 0; }
+.fluxo .f > * { min-width: 0; }
+.fluxo .q { font-family: var(--f-mono); font-size: 13px; color: var(--azul); }
+.fluxo .f.laco { background: var(--azul-claro); }
+/* checklist */
+.progresso { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-family: var(--f-mono); font-size: 13px; color: var(--tinta-suave); }
+.barra { flex: 1 1 200px; max-width: 380px; height: 8px; background: var(--linha); border-radius: 999px; overflow: hidden; }
+.barra i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .25s; }
+.fase { display: grid; gap: 8px; }
+.fase > h3 { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-suave); font-weight: 500; }
+.passo { display: grid; grid-template-columns: 26px 1fr; gap: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 12px 14px; }
+.passo > input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--ok); cursor: pointer; }
+.passo .corpo { display: grid; gap: 6px; min-width: 0; }
+.passo .t { font-weight: 700; cursor: pointer; }
+.teste .t { cursor: pointer; }
+.feito-doc { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 14px; cursor: pointer; }
+.feito-doc input { width: 18px; height: 18px; accent-color: var(--ok); }
+.passo .d { color: var(--tinta-suave); font-size: 15px; display: grid; gap: 6px; }
+.passo .d ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.passo.feito { opacity: .6; }
+.passo.feito .t { text-decoration: line-through; }
+/* código */
+.cod { position: relative; min-width: 0; }
+.cod pre { margin: 0; background: var(--codigo-fundo); color: var(--codigo-texto); padding: 14px 16px; padding-top: 38px; border-radius: 10px; overflow: auto; max-height: 60vh; font: 12.5px/1.55 var(--f-mono); tab-size: 2; white-space: pre; }
+.cod .rot { position: absolute; top: 10px; left: 14px; font: 11px var(--f-mono); color: #8ea3c4; letter-spacing: .04em; }
+.copiar { position: absolute; top: 7px; right: 8px; font: 500 12px var(--f-mono); padding: 4px 10px; border-radius: 6px; border: 1px solid #3a5070; background: #1a2e4d; color: #dfe8f7; cursor: pointer; }
+.copiar:hover { background: #24406a; }
+/* teste de aceite */
+.teste { display: grid; grid-template-columns: 26px 1fr; gap: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 14px; }
+.teste > input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--ok); }
+.teste .corpo { display: grid; gap: 8px; min-width: 0; }
+.teste .n { font-family: var(--f-mono); font-size: 12px; color: var(--azul); }
+.teste .esp { border-left: 3px solid var(--ok); padding-left: 10px; font-size: 15px; }
+.teste.feito { opacity: .6; }
+/* substituições */
+details.troca { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; }
+details.troca > summary { cursor: pointer; padding: 12px 16px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+details.troca > summary .num { font-family: var(--f-mono); font-size: 12px; color: var(--azul); min-width: 2ch; }
+details.troca .par { display: grid; gap: 10px; padding: 0 16px 16px; }
+details.troca .par .cod pre { max-height: 40vh; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rot-loc { color: #ffcf6e !important; }
+.rot-sub { color: #8fe3b6 !important; }
+.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--tinta); color: var(--espuma); font: 13px var(--f-mono); padding: 9px 14px; border-radius: 8px; opacity: 0; transform: translateY(6px); transition: .2s; pointer-events: none; }
+.toast.on { opacity: 1; transform: none; }
+@media (max-width: 640px) { .fluxo .f { grid-template-columns: 1fr; gap: 2px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="topo">
+    <div class="sobre"><b>PetCare Hub</b> · etapa 5 · bot</div>
+    <h1>Bot PetCare <span>no N8n</span></h1>
+    <p class="lede">Implantar o N8n do zero, aplicar os arquivos 13 e 14 no Supabase e aprovar o bot pelo canal de teste: um chat no navegador ligado ao mesmo motor que vai atender no WhatsApp. O provedor de WhatsApp entra depois, como um adaptador.</p>
+    <div class="chips">
+      <span class="chip ok">Arquivos 13 e 14: aceite B1–B8 OK (Postgres 16 local)</span>
+      <span class="chip ok">Motor: 11 cenários simulados OK, inclusive o canal de teste</span>
+      <span class="chip pend">Workflows ainda não importados num N8n</span>
+      <span class="chip pend">Provedor de WhatsApp em decisão</span>
+    </div>
+  </header>
+
+  <nav class="abas" role="tablist" aria-label="Seções do guia">
+    <button role="tab" id="aba-visao" aria-controls="visao" aria-selected="true">Visão geral</button>
+    <button role="tab" id="aba-railway" aria-controls="railway" aria-selected="false"><small>1</small>Railway</button>
+    <button role="tab" id="aba-supabase" aria-controls="supabase" aria-selected="false"><small>2</small>Supabase</button>
+    <button role="tab" id="aba-n8n" aria-controls="n8n" aria-selected="false"><small>3</small>N8n e canal de teste</button>
+    <button role="tab" id="aba-aceite" aria-controls="aceite" aria-selected="false"><small>4</small>Aceite pelo chat</button>
+    <button role="tab" id="aba-whatsapp" aria-controls="whatsapp" aria-selected="false">WhatsApp · em espera</button>
+    <button role="tab" id="aba-decisoes" aria-controls="decisoes" aria-selected="false">Decisões</button>
+    <button role="tab" id="aba-docs" aria-controls="docs" aria-selected="false">Atualizar docs</button>
+  </nav>
+
+  <!-- ============================ VISÃO GERAL ============================ -->
+  <section class="painel" id="visao" role="tabpanel" aria-labelledby="aba-visao">
+    <div class="progresso"><span>Progresso (abas 1 a 4)</span><span class="barra"><i id="barra-geral"></i></span><span id="txt-geral">0 de 0</span></div>
+
+    <div class="aviso">
+      <b>Situação em 06/11/2026</b>
+      <p>A Z-API virou Z-API Omni, só com API oficial da Meta. O provedor de WhatsApp está sendo decidido em outro chat. Enquanto isso, siga as abas 1 a 4: o bot inteiro fica pronto e aprovado pelo canal de teste. Quando o provedor for escolhido, mudam três peças (ler o webhook, enviar, alertar a queda) e o resto continua igual.</p>
+    </div>
+
+    <div class="prosa">
+      <h2>Como uma mensagem atravessa o sistema</h2>
+      <p>O N8n não lê nem grava tabela. Ele recebe a mensagem, deixa o <b>motor</b> decidir qual função do banco chamar, chama, devolve o resultado ao motor e repete até ter a resposta. Regra de negócio continua no Supabase.</p>
+    </div>
+    <div class="fluxo" aria-label="Caminho de uma mensagem">
+      <div class="f"><span class="q">Entrada</span><span>Hoje, o chat de teste do N8n. Depois, o webhook do provedor de WhatsApp. Cada canal tem o seu normalizador, que entrega ao motor sempre o mesmo formato de evento.</span></div>
+      <div class="f laco"><span class="q">Motor ⇄ RPC</span><span>O motor pede uma função por vez (<code>bot_entrada</code>, <code>bot_servicos</code>, <code>reservar_agendamento</code>…). O sub-workflow <b>RPC Supabase</b> chama e devolve <code>{ status, body }</code>. Cada escrita roda uma vez só, porque o motor reaproveita o que já tem.</span></div>
+      <div class="f"><span class="q">Saída</span><span>No canal de teste, a resposta e os avisos ao dono aparecem no próprio chat. No WhatsApp, saem pelo provedor.</span></div>
+      <div class="f"><span class="q">Log</span><span><code>bot_registrar_mensagem</code> grava os metadados em <code>mensagens_log</code> (CM-11), com <code>canal = 'teste'</code> nos testes.</span></div>
+    </div>
+
+    <h2>O que foi entregue</h2>
+    <div class="tabela"><table>
+      <thead><tr><th>Arquivo</th><th>Para quê</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/schema/13_bot_n8n.sql</code></td><td>Estados novos da conversa, <code>telefone_avisos</code>, <code>fluxo_erros</code> e as funções que faltavam para o N8n não tocar em tabela. <code>lembretes_pendentes</code> refeita.</td></tr>
+        <tr><td><code>supabase/schema/14_canal_teste.sql</code></td><td>Canal <code>teste</code> aceito no banco e <code>bot_petshop_teste(slug)</code>, que só alcança pet shop marcado como teste.</td></tr>
+        <tr><td><code>supabase/testes/aceite_bot.sql</code></td><td>B1–B8. Desfaz tudo no fim. Esperado: "ACEITE BOT OK".</td></tr>
+        <tr><td><code>n8n/src/motor-conversa.js</code></td><td>Fonte do motor de conversa, independente do provedor.</td></tr>
+        <tr><td><code>n8n/workflows/00</code>, <code>04</code>, <code>05</code></td><td>RPC Supabase, Erros e Canal de teste: os três que você implanta agora.</td></tr>
+        <tr><td><code>n8n/workflows/01</code> a <code>03</code></td><td>Bot, lembretes e conexão no formato da Z-API clássica. Em espera: serão adaptados ao provedor escolhido.</td></tr>
+        <tr><td><code>n8n/build.js</code> · <code>n8n/test/simular.js</code> · <code>n8n/README.md</code></td><td>Gera os JSON a partir do motor · simula conversas contra um Postgres · regras de manutenção.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="aviso">
+      <b>O que ainda não foi provado</b>
+      <p>O SQL rodou num Postgres 16 local com o schema 01–11 e um substituto do arquivo 12 (só a função <code>bot_petshop_info</code>, com chaves que eu supus). Os workflows foram validados em estrutura e sintaxe, mas não importados num N8n. Os passos 2.5 e 3.8 existem para pegar as diferenças.</p>
+    </div>
+  </section>
+
+  <!-- ============================ 1 RAILWAY ============================ -->
+  <section class="painel" id="railway" role="tabpanel" aria-labelledby="aba-railway" hidden>
+    <div class="prosa">
+      <h2>1 · N8n do zero no Railway</h2>
+      <p>Os nomes de menu do Railway mudam com frequência. Se algo não bater, siga o que a tela mostra e me conte.</p>
+    </div>
+    <div class="fase">
+      <h3>Projeto</h3>
+      <div class="passo"><input type="checkbox" id="r1"><span class="corpo"><span class="t">Criar um projeto novo com o modelo do N8n com Postgres</span><span class="d"><span>Para desenvolver, o plano Hobby (~US$5/mês, a confirmar) deve bastar. Confira nas configurações do serviço se a opção de dormir sem uso está desligada: com ela ligada, a primeira mensagem demora ou se perde.</span><span>O Pro continua obrigatório antes da POC.</span></span></span></div>
+      <div class="passo"><input type="checkbox" id="r2"><span class="corpo"><span class="t">Guardar a <code>N8N_ENCRYPTION_KEY</code> nova</span><span class="d">O modelo gera a chave sozinho. Copie de Variables para o gerenciador de senhas. Sem ela, um backup do banco do N8n não abre as credenciais.</span></span></div>
+      <div class="passo"><input type="checkbox" id="r3"><span class="corpo"><span class="t">Fixar a versão da imagem do N8n</span><span class="d">Use uma tag de versão, não <code>latest</code>, para uma atualização não quebrar o bot sem aviso. Anote a versão. Os workflows não dependem de <code>$env</code>, então funcionam no N8n 1.x e no 2.x.</span></span></div>
+    </div>
+    <div class="fase">
+      <h3>Variáveis</h3>
+      <div class="passo"><input type="checkbox" id="r5"><span class="corpo"><span class="t">Definir estas, além das geradas pelo modelo</span><span class="d">
+        <div class="cod"><span class="rot">VARIÁVEIS</span><button class="copiar" type="button">Copiar</button><pre><code>N8N_EDITOR_BASE_URL=https://n8n.petcarehub.com.br
+WEBHOOK_URL=https://n8n.petcarehub.com.br
+GENERIC_TIMEZONE=America/Sao_Paulo
+TZ=America/Sao_Paulo
+N8N_PROXY_HOPS=1
+EXECUTIONS_DATA_SAVE_ON_ERROR=all
+EXECUTIONS_DATA_SAVE_ON_SUCCESS=none</code></pre></div>
+        <span><code>N8N_PROXY_HOPS=1</code> porque o Railway fica na frente como proxy. Nada de chave do Supabase em variável: vai em credencial (passo 3.1).</span></span></span></div>
+    </div>
+    <div class="fase">
+      <h3>Domínio</h3>
+      <div class="passo"><input type="checkbox" id="r6"><span class="corpo"><span class="t">Settings → Networking: adicionar <code>n8n.petcarehub.com.br</code></span><span class="d">Porta 5678. O Railway mostra o destino do CNAME (e, às vezes, um TXT de verificação).</span></span></div>
+      <div class="passo"><input type="checkbox" id="r7"><span class="corpo"><span class="t">Atualizar o DNS no Registro.br</span><span class="d">Troque o destino do CNAME <code>n8n</code> (hoje <code>n8n-production-d5dc.up.railway.app</code>) pelo novo. Ponto final no destino, se o Registro.br exigir. Crie o TXT, se pedido.</span></span></div>
+      <div class="passo"><input type="checkbox" id="r8"><span class="corpo"><span class="t">Deploy e criar a conta de owner em https://n8n.petcarehub.com.br</span><span class="d">Cadeado válido e tela de cadastro do N8n. Use o <code>contas@harpiatechstudio.com.br</code> e ligue a verificação em duas etapas, se a versão oferecer.</span></span></div>
+      <div class="passo"><input type="checkbox" id="r9"><span class="corpo"><span class="t">Apagar o projeto antigo do Railway</span><span class="d">Só depois de o novo estar no ar. Ele tinha o workflow antigo, que lia e gravava tabela direto, e o domínio <code>app.</code>, que é do painel.</span></span></div>
+    </div>
+  </section>
+
+  <!-- ============================ 2 SUPABASE ============================ -->
+  <section class="painel" id="supabase" role="tabpanel" aria-labelledby="aba-supabase" hidden>
+    <div class="prosa">
+      <h2>2 · Supabase: chave e arquivos 13 e 14</h2>
+      <p>Tudo pelo painel do Supabase e pelo SQL Editor. Nenhuma chave passa por esta conversa.</p>
+    </div>
+    <div class="fase">
+      <h3>Chaves</h3>
+      <div class="passo"><input type="checkbox" id="s1"><span class="corpo"><span class="t">Criar a Secret key dedicada <code>n8n-bot</code></span><span class="d"><span>Project Settings → API Keys → Secret keys → nova chave <code>n8n-bot</code>. Copie uma vez e cole só na credencial do N8n (passo 3.1).</span><span>Por que dedicada: cada consumidor tem a sua (<code>edge-convidar-membro</code>, <code>n8n-bot</code>). Vazou uma, você revoga só ela.</span></span></span></div>
+      <div class="passo"><input type="checkbox" id="s2"><span class="corpo"><span class="t">Aproveitar e conferir o <code>PETCARE_SECRET_KEY</code></span><span class="d">Edge Functions → Secrets. Se não existir, crie a chave <code>edge-convidar-membro</code>, grave o segredo e teste um convite. É a pendência da seção 7.2.</span></span></div>
+    </div>
+    <div class="fase">
+      <h3>Banco</h3>
+      <div class="passo"><input type="checkbox" id="s3"><span class="corpo"><span class="t">Rodar o arquivo 13 no SQL Editor</span><span class="d">Depois do 12. Pode rodar de novo. Esperado no fim: "Arquivo 13 aplicado".</span>
+        <div class="cod"><span class="rot">13_bot_n8n.sql</span><button class="copiar" type="button">Copiar</button><pre><code>-- =====================================================================
+-- PetCare Hub · 13 · Bot no N8n (etapa 5)
+-- Complementa o 05 com o que o workflow precisa para não tocar em tabela:
+--   1. estados novos da conversa (nome do tutor, nome do pet, serviço)
+--   2. bot_config.telefone_avisos e controle de alerta de conexão
+--   3. fluxo_erros (PL-04)
+--   4. bot_servicos            → lista de serviços para o porte (BT-03)
+--   5. bot_envio               → instância, token (Vault) e telefone de avisos
+--   6. bot_aberto_agora        → BT-12 (horário + bloqueio do pet shop inteiro)
+--   7. bot_registrar_mensagem  → CM-11 (metadados, sem texto: LGPD)
+--   8. bot_registrar_fromme    → BT-18 sem confundir eco do próprio bot com o dono
+--   9. lembretes_pendentes     → agora ignora bot desligado, bloqueio e CM-10
+--  10. bot_lembrete_marcar / bot_responder_lembrete → CM-02 e CM-03
+--  11. bot_agendamentos_em_bloqueio → aviso ao dono
+--  12. bot_instancias_monitoradas / bot_conexao_evento → PL-03
+--  13. bot_registrar_erro     → PL-04
+-- Tudo SECURITY DEFINER e executável só pelo service_role (secret key do N8n).
+-- Rode depois do 12. Pode rodar de novo: é idempotente.
+-- =====================================================================
+begin;
+
+-- ---------------------------------------------------------------------
+-- 1. Estados novos. Antes, nome do tutor e do pet não tinham estado
+--    próprio e o fluxo teria de esconder subetapas dentro de dados_temp.
+-- ---------------------------------------------------------------------
+alter table public.bot_conversas drop constraint if exists bot_conversas_estado_check;
+alter table public.bot_conversas add constraint bot_conversas_estado_check check (estado in (
+  &#x27;novo&#x27;,&#x27;idle&#x27;,&#x27;menu&#x27;,
+  &#x27;aguardando_nome&#x27;,&#x27;aguardando_pet&#x27;,&#x27;aguardando_nome_pet&#x27;,&#x27;aguardando_porte&#x27;,&#x27;aguardando_servico&#x27;,
+  &#x27;aguardando_data&#x27;,&#x27;aguardando_hora&#x27;,&#x27;aguardando_confirmacao&#x27;,&#x27;aguardando_cancelamento&#x27;,
+  &#x27;humano&#x27;,&#x27;bloqueado&#x27;));
+
+-- Mensagem que o dono mandou pelo celular entra no log como &#x27;humano&#x27;.
+alter table public.mensagens_log drop constraint if exists mensagens_log_tipo_check;
+alter table public.mensagens_log add constraint mensagens_log_tipo_check check (tipo in (
+  &#x27;conversa&#x27;,&#x27;confirmacao&#x27;,&#x27;lembrete&#x27;,&#x27;cancelamento&#x27;,&#x27;reativacao&#x27;,&#x27;pet_pronto&#x27;,
+  &#x27;transbordo&#x27;,&#x27;alerta_dono&#x27;,&#x27;humano&#x27;,&#x27;outro&#x27;));
+create index if not exists mensagens_log_externo_idx on public.mensagens_log (petshop_id, id_externo)
+  where id_externo is not null;
+
+-- ---------------------------------------------------------------------
+-- 2. Avisos ao dono e alerta de conexão
+--    telefone_avisos: celular pessoal do dono. Precisa ser diferente do
+--    número do bot: mandar para o próprio número não notifica ninguém.
+-- ---------------------------------------------------------------------
+alter table public.bot_config add column if not exists telefone_avisos text
+  check (telefone_avisos ~ &#x27;^\+[1-9][0-9]{7,14}$&#x27;);
+alter table public.bot_config add column if not exists conexao_alertado_em timestamptz;
+
+-- ---------------------------------------------------------------------
+-- 3. Log de erros dos fluxos (PL-04). Só a Harpia lê.
+-- ---------------------------------------------------------------------
+create table if not exists public.fluxo_erros (
+  id            uuid primary key default gen_random_uuid(),
+  petshop_id    uuid references public.petshops(id) on delete set null,
+  workflow      text not null,
+  no            text,
+  mensagem      text not null,
+  execucao_id   text,
+  url_execucao  text,
+  criado_em     timestamptz not null default now()
+);
+create index if not exists fluxo_erros_idx on public.fluxo_erros (criado_em desc);
+alter table public.fluxo_erros enable row level security;
+drop policy if exists fluxo_erros_ler on public.fluxo_erros;
+create policy fluxo_erros_ler on public.fluxo_erros for select to authenticated
+  using ((select private.eh_super_admin()));
+revoke all on public.fluxo_erros from anon;
+
+-- ---------------------------------------------------------------------
+-- 4. Serviços oferecidos pelo bot para um porte (BT-03).
+--    Só estética, ativos, não adicionais, marcados disponivel_bot e com
+--    preço/duração para o porte (o motor recusaria os outros).
+-- ---------------------------------------------------------------------
+create or replace function public.bot_servicos(p_petshop uuid, p_porte text) returns jsonb
+language sql stable security definer set search_path = &#x27;&#x27; as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+           &#x27;id&#x27;, s.id, &#x27;nome&#x27;, s.nome, &#x27;preco&#x27;, sp.preco, &#x27;duracao_min&#x27;, sp.duracao_min)
+         order by s.ordem, s.nome), &#x27;[]&#x27;)
+    from public.servicos s
+    join public.servico_precos sp on sp.servico_id = s.id and sp.porte = p_porte
+   where s.petshop_id = p_petshop and s.ativo and s.disponivel_bot
+     and not s.adicional and s.tipo = &#x27;estetica&#x27;;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 5. Dados de envio do pet shop numa chamada só.
+-- ---------------------------------------------------------------------
+create or replace function public.bot_envio(p_petshop uuid) returns jsonb
+language sql stable security definer set search_path = &#x27;&#x27; as $$
+  select jsonb_build_object(
+           &#x27;canal&#x27;, bc.canal,
+           &#x27;zapi_instance_id&#x27;, bc.zapi_instance_id,
+           &#x27;token&#x27;, ds.decrypted_secret,
+           &#x27;telefone_avisos&#x27;, bc.telefone_avisos,
+           &#x27;conexao_status&#x27;, bc.conexao_status,
+           &#x27;ativo&#x27;, bc.ativo)
+    from public.bot_config bc
+    left join vault.decrypted_secrets ds on ds.id = bc.token_secret_id
+   where bc.petshop_id = p_petshop;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 6. Aberto agora? E quando abre de novo? (BT-12)
+--    Considera horário de funcionamento e bloqueio do pet shop inteiro
+--    (feriado). Folga de um profissional não fecha a loja.
+-- ---------------------------------------------------------------------
+create or replace function public.bot_aberto_agora(p_petshop uuid) returns jsonb
+language plpgsql stable security definer set search_path = &#x27;&#x27; as $$
+declare
+  v_fuso   text;
+  v_agora  timestamptz := now();
+  v_hoje   date;
+  v_dia    date;
+  v_ini    timestamptz;
+  v_fim    timestamptz;
+  v_bfim   timestamptz;
+  v_prox   timestamptz;
+  r        record;
+  v_dias   text[] := array[&#x27;domingo&#x27;,&#x27;segunda&#x27;,&#x27;terça&#x27;,&#x27;quarta&#x27;,&#x27;quinta&#x27;,&#x27;sexta&#x27;,&#x27;sábado&#x27;];
+  v_txt    text;
+begin
+  select fuso into v_fuso from public.petshops where id = p_petshop;
+  if v_fuso is null then return jsonb_build_object(&#x27;aberto&#x27;, false, &#x27;proxima_abertura&#x27;, null); end if;
+  v_hoje := (v_agora at time zone v_fuso)::date;
+
+  for i in 0..14 loop
+    v_dia := v_hoje + i;
+    for r in select abre, fecha from public.horarios_funcionamento
+              where petshop_id = p_petshop and dia_semana = extract(dow from v_dia)::int
+              order by abre loop
+      v_ini := (v_dia + r.abre) at time zone v_fuso;
+      v_fim := (v_dia + r.fecha) at time zone v_fuso;
+      if v_fim &lt;= v_agora then continue; end if;
+      v_ini := greatest(v_ini, v_agora);
+      -- empurra o início para depois de bloqueios do pet shop inteiro
+      loop
+        select max(b.fim) into v_bfim from public.bloqueios b
+         where b.petshop_id = p_petshop and b.recurso_id is null
+           and b.inicio &lt;= v_ini and b.fim &gt; v_ini;
+        exit when v_bfim is null;
+        v_ini := v_bfim;
+      end loop;
+      if v_ini &lt; v_fim then v_prox := v_ini; exit; end if;
+    end loop;
+    exit when v_prox is not null;
+  end loop;
+
+  if v_prox is null then
+    return jsonb_build_object(&#x27;aberto&#x27;, false, &#x27;proxima_abertura&#x27;, null);
+  end if;
+  if v_prox &lt;= v_agora + interval &#x27;1 minute&#x27; then
+    return jsonb_build_object(&#x27;aberto&#x27;, true, &#x27;proxima_abertura&#x27;, null);
+  end if;
+  v_dia := (v_prox at time zone v_fuso)::date;
+  v_txt := case when v_dia = v_hoje then &#x27;hoje&#x27;
+                when v_dia = v_hoje + 1 then &#x27;amanhã&#x27;
+                else v_dias[extract(dow from v_dia)::int + 1] || &#x27; (&#x27; || to_char(v_dia, &#x27;DD/MM&#x27;) || &#x27;)&#x27; end
+           || &#x27; às &#x27; || to_char(v_prox at time zone v_fuso, &#x27;HH24:MI&#x27;);
+  return jsonb_build_object(&#x27;aberto&#x27;, false, &#x27;proxima_abertura&#x27;, v_txt);
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 7. Registro de mensagens (CM-11). Só metadados.
+-- ---------------------------------------------------------------------
+create or replace function public.bot_registrar_mensagem(
+  p_petshop      uuid,
+  p_telefone     text,
+  p_direcao      text,
+  p_tipo         text,
+  p_status       text default null,
+  p_agendamento  uuid default null,
+  p_id_externo   text default null,
+  p_erro         text default null) returns uuid
+language sql volatile security definer set search_path = &#x27;&#x27; as $$
+  insert into public.mensagens_log (petshop_id, telefone, agendamento_id, direcao, tipo,
+                                    categoria_cobranca, canal, status, erro, id_externo)
+  select p_petshop, private.normalizar_telefone(p_telefone), p_agendamento, p_direcao, p_tipo,
+         case when p_direcao = &#x27;entrada&#x27; then null
+              when p_tipo in (&#x27;confirmacao&#x27;,&#x27;lembrete&#x27;,&#x27;cancelamento&#x27;,&#x27;pet_pronto&#x27;) then &#x27;utilidade&#x27;
+              when p_tipo = &#x27;reativacao&#x27; then &#x27;marketing&#x27;
+              else &#x27;servico&#x27; end,
+         (select canal from public.bot_config where petshop_id = p_petshop),
+         coalesce(p_status, case when p_direcao = &#x27;entrada&#x27; then &#x27;recebida&#x27; else &#x27;enviada&#x27; end),
+         left(p_erro, 500), p_id_externo
+  returning id;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 8. fromMe (BT-18). Com &quot;Notificar enviadas por mim&quot; ligado, a Z-API
+--    devolve TAMBÉM as mensagens que o próprio bot mandou pela API.
+--    Sem esta checagem, cada resposta do bot pausaria o bot.
+--    O N8n espera alguns segundos antes de chamar (dá tempo de o envio
+--    gravar o id_externo) e passa from_api quando a Z-API informar.
+-- ---------------------------------------------------------------------
+create or replace function public.bot_registrar_fromme(
+  p_petshop uuid, p_telefone text, p_message_id text, p_from_api boolean default null) returns text
+language plpgsql volatile security definer set search_path = &#x27;&#x27; as $$
+begin
+  if coalesce(p_from_api, false) then return &#x27;eco_do_bot&#x27;; end if;
+  if p_message_id is not null and exists (
+       select 1 from public.mensagens_log
+        where petshop_id = p_petshop and id_externo = p_message_id
+          and direcao = &#x27;saida&#x27; and tipo &lt;&gt; &#x27;humano&#x27;) then   -- só o que o bot enviou
+    return &#x27;eco_do_bot&#x27;;
+  end if;
+  perform public.bot_pausar_por_humano(p_petshop, p_telefone);
+  perform public.bot_registrar_mensagem(p_petshop, p_telefone, &#x27;saida&#x27;, &#x27;humano&#x27;, &#x27;enviada&#x27;, null, p_message_id);
+  return &#x27;pausado&#x27;;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 9. Lembretes 24h. Mesma assinatura do 05; agora também:
+--    - só pet shop com bot ligado;
+--    - fora de período bloqueado (o dono é avisado pela função 11);
+--    - respeita o limite semanal de mensagens automáticas (CM-10).
+-- ---------------------------------------------------------------------
+create or replace function public.lembretes_pendentes(p_petshop uuid default null) returns table (
+  agendamento_id uuid, petshop_id uuid, telefone text, nome_tutor text, pet text,
+  data text, hora text, servicos text, nome_bot text)
+language sql stable security definer set search_path = &#x27;&#x27; as $$
+  select a.id, a.petshop_id, t.telefone, tp.nome, p.nome,
+         to_char(a.inicio at time zone ps.fuso, &#x27;DD/MM&#x27;), to_char(a.inicio at time zone ps.fuso, &#x27;HH24:MI&#x27;),
+         (select string_agg(i.descricao, &#x27; + &#x27;) from public.agendamento_itens i where i.agendamento_id = a.id),
+         bc.nome_bot
+    from public.agendamentos a
+    join public.petshops ps      on ps.id = a.petshop_id and ps.ativo
+    join public.bot_config bc    on bc.petshop_id = a.petshop_id and bc.ativo
+    join public.tutores t        on t.id = a.tutor_id
+    join public.tutor_petshop tp on tp.tutor_id = a.tutor_id and tp.petshop_id = a.petshop_id
+    join public.pets p           on p.id = a.pet_id
+   where a.status = &#x27;confirmado&#x27;
+     and (a.inicio at time zone ps.fuso)::date = (now() at time zone ps.fuso)::date + 1
+     and tp.aceita_mensagens
+     and (p_petshop is null or a.petshop_id = p_petshop)
+     and not exists (select 1 from public.lembretes l where l.agendamento_id = a.id and l.tipo = &#x27;24h&#x27;)
+     and not exists (select 1 from public.bloqueios b
+                      where b.petshop_id = a.petshop_id
+                        and (b.recurso_id is null or b.recurso_id = a.recurso_id)
+                        and tstzrange(b.inicio, b.fim, &#x27;[)&#x27;) &amp;&amp; tstzrange(a.inicio, a.fim, &#x27;[)&#x27;))
+     and (select count(*) from public.mensagens_log m
+           where m.petshop_id = a.petshop_id and m.telefone = t.telefone and m.direcao = &#x27;saida&#x27;
+             and m.tipo in (&#x27;lembrete&#x27;,&#x27;reativacao&#x27;,&#x27;pet_pronto&#x27;) and m.status &lt;&gt; &#x27;falha&#x27;
+             and m.criado_em &gt; now() - interval &#x27;7 days&#x27;) &lt; bc.limite_msgs_auto_semana
+   order by a.petshop_id, a.inicio;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 10. Lembrete: marcar antes de enviar e tratar a resposta.
+-- ---------------------------------------------------------------------
+-- Marca o lembrete ANTES do envio. Se o cron rodar duas vezes, a segunda
+-- recebe false e não manda de novo (unique agendamento + tipo).
+create or replace function public.bot_lembrete_marcar(p_agendamento uuid) returns boolean
+language plpgsql volatile security definer set search_path = &#x27;&#x27; as $$
+begin
+  insert into public.lembretes (petshop_id, agendamento_id, tipo)
+  select a.petshop_id, a.id, &#x27;24h&#x27; from public.agendamentos a where a.id = p_agendamento
+  on conflict (agendamento_id, tipo) do nothing;
+  return found;
+end $$;
+
+-- Envio falhou: libera para o próximo cron tentar de novo.
+create or replace function public.bot_lembrete_desmarcar(p_agendamento uuid) returns void
+language sql volatile security definer set search_path = &#x27;&#x27; as $$
+  delete from public.lembretes where agendamento_id = p_agendamento and tipo = &#x27;24h&#x27; and resposta is null;
+$$;
+
+-- Resposta SIM/NÃO do tutor. Procura o lembrete mais recente sem resposta
+-- (até 36 h) de um agendamento futuro deste tutor neste pet shop.
+create or replace function public.bot_responder_lembrete(
+  p_petshop uuid, p_telefone text, p_resposta text) returns jsonb
+language plpgsql volatile security definer set search_path = &#x27;&#x27; as $$
+declare
+  v_tel   text := private.normalizar_telefone(p_telefone);
+  v_resp  text := lower(trim(p_resposta));
+  r       record;
+begin
+  if v_resp not in (&#x27;sim&#x27;,&#x27;nao&#x27;) then
+    raise exception &#x27;Resposta deve ser sim ou nao&#x27; using errcode = &#x27;22023&#x27;;
+  end if;
+
+  select l.id as lembrete_id, a.id as agendamento_id, a.status, p.nome as pet, tp.nome as nome_tutor,
+         to_char(a.inicio at time zone ps.fuso, &#x27;DD/MM&#x27;) as data,
+         to_char(a.inicio at time zone ps.fuso, &#x27;HH24:MI&#x27;) as hora,
+         bc.telefone_avisos
+    into r
+    from public.lembretes l
+    join public.agendamentos a   on a.id = l.agendamento_id
+    join public.tutores t        on t.id = a.tutor_id
+    join public.pets p           on p.id = a.pet_id
+    join public.petshops ps      on ps.id = a.petshop_id
+    join public.tutor_petshop tp on tp.tutor_id = a.tutor_id and tp.petshop_id = a.petshop_id
+    left join public.bot_config bc on bc.petshop_id = a.petshop_id
+   where a.petshop_id = p_petshop and t.telefone = v_tel
+     and l.tipo = &#x27;24h&#x27; and l.resposta is null and l.enviado_em &gt; now() - interval &#x27;36 hours&#x27;
+     and a.inicio &gt; now() and a.status in (&#x27;pendente&#x27;,&#x27;confirmado&#x27;)
+   order by l.enviado_em desc
+   limit 1;
+
+  if r.lembrete_id is null then
+    return jsonb_build_object(&#x27;encontrado&#x27;, false);
+  end if;
+
+  if v_resp = &#x27;sim&#x27; then
+    update public.lembretes set resposta = &#x27;confirmado&#x27;, respondido_em = now() where id = r.lembrete_id;
+    if r.status = &#x27;pendente&#x27; then
+      update public.agendamentos set status = &#x27;confirmado&#x27; where id = r.agendamento_id;
+    end if;
+  else
+    update public.agendamentos
+       set status = &#x27;cancelado&#x27;, motivo_cancelamento = &#x27;Cancelado pelo tutor no lembrete&#x27;
+     where id = r.agendamento_id;
+    update public.lembretes set resposta = &#x27;cancelado&#x27;, respondido_em = now() where id = r.lembrete_id;
+  end if;
+
+  return jsonb_build_object(
+    &#x27;encontrado&#x27;, true,
+    &#x27;acao&#x27;, case when v_resp = &#x27;sim&#x27; then &#x27;confirmado&#x27; else &#x27;cancelado&#x27; end,
+    &#x27;agendamento_id&#x27;, r.agendamento_id, &#x27;pet&#x27;, r.pet, &#x27;nome_tutor&#x27;, r.nome_tutor,
+    &#x27;data&#x27;, r.data, &#x27;hora&#x27;, r.hora, &#x27;telefone_avisos&#x27;, r.telefone_avisos);
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 11. Agendamentos de amanhã em período bloqueado: aviso ao dono.
+--     Uma linha por pet shop, com a lista pronta para a mensagem.
+-- ---------------------------------------------------------------------
+create or replace function public.bot_agendamentos_em_bloqueio(p_petshop uuid default null) returns table (
+  petshop_id uuid, telefone_avisos text, itens jsonb)
+language sql stable security definer set search_path = &#x27;&#x27; as $$
+  select a.petshop_id, bc.telefone_avisos,
+         jsonb_agg(jsonb_build_object(
+           &#x27;hora&#x27;, to_char(a.inicio at time zone ps.fuso, &#x27;HH24:MI&#x27;),
+           &#x27;data&#x27;, to_char(a.inicio at time zone ps.fuso, &#x27;DD/MM&#x27;),
+           &#x27;pet&#x27;, p.nome, &#x27;tutor&#x27;, tp.nome, &#x27;telefone&#x27;, t.telefone) order by a.inicio)
+    from public.agendamentos a
+    join public.petshops ps      on ps.id = a.petshop_id and ps.ativo
+    join public.bot_config bc    on bc.petshop_id = a.petshop_id and bc.ativo
+    join public.tutores t        on t.id = a.tutor_id
+    join public.tutor_petshop tp on tp.tutor_id = a.tutor_id and tp.petshop_id = a.petshop_id
+    join public.pets p           on p.id = a.pet_id
+   where a.status in (&#x27;pendente&#x27;,&#x27;confirmado&#x27;)
+     and (a.inicio at time zone ps.fuso)::date = (now() at time zone ps.fuso)::date + 1
+     and (p_petshop is null or a.petshop_id = p_petshop)
+     and exists (select 1 from public.bloqueios b
+                  where b.petshop_id = a.petshop_id
+                    and (b.recurso_id is null or b.recurso_id = a.recurso_id)
+                    and tstzrange(b.inicio, b.fim, &#x27;[)&#x27;) &amp;&amp; tstzrange(a.inicio, a.fim, &#x27;[)&#x27;))
+   group by a.petshop_id, bc.telefone_avisos;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 12. Conexão do WhatsApp (PL-03)
+-- ---------------------------------------------------------------------
+create or replace function public.bot_instancias_monitoradas() returns table (
+  petshop_id uuid, petshop text, zapi_instance_id text, token text, ativo boolean)
+language sql stable security definer set search_path = &#x27;&#x27; as $$
+  select bc.petshop_id, ps.nome, bc.zapi_instance_id, ds.decrypted_secret, bc.ativo
+    from public.bot_config bc
+    join public.petshops ps on ps.id = bc.petshop_id and ps.ativo
+    left join vault.decrypted_secrets ds on ds.id = bc.token_secret_id
+   where bc.canal = &#x27;zapi&#x27; and bc.zapi_instance_id is not null;
+$$;
+
+-- Registra o estado e diz se é hora de alertar:
+--   queda: na transição e, se continuar caído, a cada 6 h;
+--   volta: só se a queda tinha sido alertada.
+create or replace function public.bot_conexao_evento(
+  p_instance text, p_conectado boolean, p_detalhe text default null) returns jsonb
+language plpgsql volatile security definer set search_path = &#x27;&#x27; as $$
+declare
+  v_cfg    public.bot_config;
+  v_nome   text;
+  v_novo   text := case when p_conectado then &#x27;conectado&#x27; else &#x27;desconectado&#x27; end;
+  v_queda  boolean := false;
+  v_volta  boolean := false;
+begin
+  select * into v_cfg from public.bot_config where zapi_instance_id = p_instance;
+  if v_cfg.petshop_id is null then
+    return jsonb_build_object(&#x27;encontrado&#x27;, false);
+  end if;
+  select nome into v_nome from public.petshops where id = v_cfg.petshop_id;
+
+  if v_novo &lt;&gt; &#x27;conectado&#x27; then
+    v_queda := v_cfg.conexao_status = &#x27;conectado&#x27;
+            or v_cfg.conexao_alertado_em is null
+            or v_cfg.conexao_alertado_em &lt; now() - interval &#x27;6 hours&#x27;;
+  else
+    v_volta := v_cfg.conexao_status &lt;&gt; &#x27;conectado&#x27; and v_cfg.conexao_alertado_em is not null;
+  end if;
+
+  update public.bot_config
+     set conexao_status = v_novo,
+         conexao_verificada_em = now(),
+         conexao_alertado_em = case when v_queda then now()
+                                    when v_novo = &#x27;conectado&#x27; then null
+                                    else conexao_alertado_em end
+   where petshop_id = v_cfg.petshop_id;
+
+  return jsonb_build_object(
+    &#x27;encontrado&#x27;, true, &#x27;petshop_id&#x27;, v_cfg.petshop_id, &#x27;petshop&#x27;, v_nome,
+    &#x27;status&#x27;, v_novo, &#x27;anterior&#x27;, v_cfg.conexao_status, &#x27;bot_ativo&#x27;, v_cfg.ativo,
+    &#x27;alertar_queda&#x27;, v_queda, &#x27;alertar_volta&#x27;, v_volta, &#x27;detalhe&#x27;, p_detalhe);
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 13. Erros dos fluxos (PL-04)
+-- ---------------------------------------------------------------------
+-- Devolve se é o primeiro erro da última hora: o N8n só manda e-mail
+-- nesse caso (o Resend gratuito tem teto de 100 e-mails por dia).
+drop function if exists public.bot_registrar_erro(text, text, text, text, text, uuid);
+create or replace function public.bot_registrar_erro(
+  p_workflow text, p_no text, p_mensagem text,
+  p_execucao text default null, p_url text default null, p_petshop uuid default null) returns jsonb
+language plpgsql volatile security definer set search_path = &#x27;&#x27; as $$
+declare v_id uuid; v_recentes int;
+begin
+  select count(*) into v_recentes from public.fluxo_erros where criado_em &gt; now() - interval &#x27;1 hour&#x27;;
+  insert into public.fluxo_erros (petshop_id, workflow, no, mensagem, execucao_id, url_execucao)
+  values (p_petshop, coalesce(p_workflow, &#x27;?&#x27;), p_no, left(coalesce(p_mensagem, &#x27;?&#x27;), 2000), p_execucao, p_url)
+  returning id into v_id;
+  return jsonb_build_object(&#x27;id&#x27;, v_id, &#x27;enviar_email&#x27;, v_recentes = 0, &#x27;erros_ultima_hora&#x27;, v_recentes + 1);
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Permissões: só o service_role (secret key do N8n)
+-- ---------------------------------------------------------------------
+do $$
+declare f text;
+begin
+  foreach f in array array[
+    &#x27;public.bot_servicos(uuid, text)&#x27;,
+    &#x27;public.bot_envio(uuid)&#x27;,
+    &#x27;public.bot_aberto_agora(uuid)&#x27;,
+    &#x27;public.bot_registrar_mensagem(uuid, text, text, text, text, uuid, text, text)&#x27;,
+    &#x27;public.bot_registrar_fromme(uuid, text, text, boolean)&#x27;,
+    &#x27;public.lembretes_pendentes(uuid)&#x27;,
+    &#x27;public.bot_lembrete_marcar(uuid)&#x27;,
+    &#x27;public.bot_lembrete_desmarcar(uuid)&#x27;,
+    &#x27;public.bot_responder_lembrete(uuid, text, text)&#x27;,
+    &#x27;public.bot_agendamentos_em_bloqueio(uuid)&#x27;,
+    &#x27;public.bot_instancias_monitoradas()&#x27;,
+    &#x27;public.bot_conexao_evento(text, boolean, text)&#x27;,
+    &#x27;public.bot_registrar_erro(text, text, text, text, text, uuid)&#x27;
+  ] loop
+    execute format(&#x27;revoke execute on function %s from public, anon, authenticated&#x27;, f);
+    execute format(&#x27;grant execute on function %s to service_role&#x27;, f);
+  end loop;
+end $$;
+grant all on public.fluxo_erros to service_role;
+
+commit;
+
+select &#x27;Arquivo 13 aplicado: RPCs do bot no N8n.&#x27; as resultado;
+</code></pre></div></span></div>
+      <div class="passo"><input type="checkbox" id="s3b"><span class="corpo"><span class="t">Rodar o arquivo 14</span><span class="d">Esperado: "Arquivo 14 aplicado: canal de teste".</span>
+        <div class="cod"><span class="rot">14_canal_teste.sql</span><button class="copiar" type="button">Copiar</button><pre><code>-- =====================================================================
+-- PetCare Hub · 14 · Canal de teste do bot
+-- Permite conversar com o bot pelo chat do N8n, sem provedor de WhatsApp.
+-- O mesmo motor, as mesmas funções e as mesmas regras; só o transporte muda.
+--   1. &#x27;teste&#x27; como canal aceito em bot_config e mensagens_log
+--   2. bot_petshop_teste(slug): só pet shop com bot_config.canal = &#x27;teste&#x27;
+--      (o canal de teste nunca escreve num pet shop real por engano)
+-- Quando o provedor for escolhido, um arquivo novo acrescenta o canal dele.
+-- Rode depois do 13. Pode rodar de novo.
+-- =====================================================================
+begin;
+
+alter table public.bot_config drop constraint if exists bot_config_canal_check;
+alter table public.bot_config add constraint bot_config_canal_check
+  check (canal in (&#x27;zapi&#x27;,&#x27;meta_oficial&#x27;,&#x27;teste&#x27;));
+
+alter table public.mensagens_log drop constraint if exists mensagens_log_canal_check;
+alter table public.mensagens_log add constraint mensagens_log_canal_check
+  check (canal in (&#x27;zapi&#x27;,&#x27;meta_oficial&#x27;,&#x27;teste&#x27;));
+
+create or replace function public.bot_petshop_teste(p_slug text) returns uuid
+language sql stable security definer set search_path = &#x27;&#x27; as $$
+  select bc.petshop_id
+    from public.bot_config bc
+    join public.petshops ps on ps.id = bc.petshop_id and ps.ativo
+   where ps.slug = p_slug and bc.canal = &#x27;teste&#x27;;
+$$;
+
+revoke execute on function public.bot_petshop_teste(text) from public, anon, authenticated;
+grant execute on function public.bot_petshop_teste(text) to service_role;
+
+commit;
+
+select &#x27;Arquivo 14 aplicado: canal de teste.&#x27; as resultado;
+</code></pre></div></span></div>
+      <div class="passo"><input type="checkbox" id="s4"><span class="corpo"><span class="t">Rodar o <code>aceite_bot.sql</code></span><span class="d">Usa o Pet Feliz de teste e desfaz tudo. Esperado: oito linhas "OK B…" e "ACEITE BOT OK ✅". Se aparecer "FALHOU", me mande a linha.</span>
+        <div class="cod"><span class="rot">aceite_bot.sql</span><button class="copiar" type="button">Copiar</button><pre><code>-- =====================================================================
+-- PetCare Hub · Aceite do arquivo 13 (RPCs do bot no N8n)
+-- Rode no SQL Editor depois do 13 e do 14, com o seed de teste (Pet Feliz).
+-- Tudo é desfeito no final. Resultado esperado: &quot;ACEITE BOT OK&quot;.
+--   B1 bot_servicos e bot_envio
+--   B2 fromMe: eco do bot não pausa; mensagem do dono pausa
+--   B3 lembretes: bot desligado, bloqueio e limite semanal (CM-10)
+--   B4 lembrete marcado uma vez; SIM confirma; NÃO cancela
+--   B5 aviso de agendamento em bloqueio
+--   B6 conexão: alerta na queda, sem repetir, alerta na volta
+--   B7 log de erro; RPCs fechadas para o usuário logado
+--   B8 canal de teste: só acha pet shop com canal &#x27;teste&#x27; (arquivo 14)
+-- =====================================================================
+create or replace function private.aceite_bot() returns setof text
+language plpgsql set search_path = &#x27;&#x27; as $$
+declare
+  pf     uuid := &#x27;11111111-1111-4111-8111-111111111111&#x27;;
+  ana    uuid := &#x27;aaaaaaaa-0000-4000-8000-000000000001&#x27;;
+  s_banho uuid := &#x27;b0000000-0000-4000-8000-000000000001&#x27;;
+  t_carla uuid := &#x27;c0000000-0000-4000-8000-000000000001&#x27;;
+  p_mel  uuid := &#x27;d0000000-0000-4000-8000-000000000002&#x27;;
+  tel    text := &#x27;+5519988887777&#x27;;
+  tz     text := &#x27;America/Sao_Paulo&#x27;;
+  amanha date := (now() at time zone &#x27;America/Sao_Paulo&#x27;)::date + 1;
+  v_ag   public.agendamentos;
+  v_j    jsonb;
+  v_t    text;
+  v_n    int;
+  v_b    boolean;
+  msgs   text[] := &#x27;{}&#x27;;
+begin
+  begin
+    -- Preparação: bot ligado, instância e avisos no Pet Feliz
+    update public.bot_config set ativo = true, zapi_instance_id = &#x27;INST-TESTE&#x27;,
+           telefone_avisos = &#x27;+5519911112222&#x27;, conexao_status = &#x27;conectado&#x27;, conexao_alertado_em = null
+     where petshop_id = pf;
+    -- Agendamento de amanhã às 10:00 (encaixe: independe do dia da semana)
+    v_ag := public.reservar_agendamento(pf, p_mel, t_carla, array[s_banho],
+              ((amanha + time &#x27;10:00&#x27;) at time zone tz), ana, &#x27;manual&#x27;, null, true);
+
+    -- B1
+    v_j := public.bot_servicos(pf, &#x27;P&#x27;);
+    assert jsonb_array_length(v_j) = 3, &#x27;B1: Pet Feliz deveria oferecer 3 serviços (sem a Hidratação, que é adicional)&#x27;;
+    assert not (v_j @&gt; &#x27;[{&quot;nome&quot;:&quot;Hidratação&quot;}]&#x27;), &#x27;B1: adicional não pode aparecer&#x27;;
+    v_j := public.bot_envio(pf);
+    assert v_j -&gt;&gt; &#x27;zapi_instance_id&#x27; = &#x27;INST-TESTE&#x27; and v_j -&gt;&gt; &#x27;telefone_avisos&#x27; = &#x27;+5519911112222&#x27;, &#x27;B1: bot_envio&#x27;;
+    v_j := public.bot_aberto_agora(pf);
+    assert v_j ? &#x27;aberto&#x27;, &#x27;B1: bot_aberto_agora&#x27;;
+    msgs := msgs || &#x27;OK B1 serviços do bot, dados de envio e horário&#x27;::text;
+
+    -- B2
+    perform public.bot_registrar_mensagem(pf, tel, &#x27;saida&#x27;, &#x27;conversa&#x27;, null, null, &#x27;MSG-DO-BOT&#x27;);
+    v_t := public.bot_registrar_fromme(pf, tel, &#x27;MSG-DO-BOT&#x27;, null);
+    assert v_t = &#x27;eco_do_bot&#x27;, &#x27;B2: eco do bot pausou o bot&#x27;;
+    v_t := public.bot_registrar_fromme(pf, tel, &#x27;qualquer&#x27;, true);
+    assert v_t = &#x27;eco_do_bot&#x27;, &#x27;B2: fromApi=true deveria ser ignorado&#x27;;
+    v_t := public.bot_registrar_fromme(pf, tel, &#x27;MSG-DO-DONO&#x27;, false);
+    assert v_t = &#x27;pausado&#x27;, &#x27;B2: mensagem do dono deveria pausar&#x27;;
+    select count(*) into v_n from public.bot_conversas where petshop_id = pf and telefone = tel and estado = &#x27;humano&#x27;;
+    assert v_n = 1, &#x27;B2: conversa deveria estar em humano&#x27;;
+    msgs := msgs || &#x27;OK B2 fromMe: eco do bot ignorado, dono pausa o bot&#x27;::text;
+
+    -- B3
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 1, &#x27;B3: lembrete de amanhã deveria estar pendente&#x27;;
+    update public.bot_config set ativo = false where petshop_id = pf;
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 0, &#x27;B3: bot desligado não manda lembrete&#x27;;
+    update public.bot_config set ativo = true where petshop_id = pf;
+    insert into public.bloqueios (petshop_id, recurso_id, tipo, inicio, fim, motivo)
+    values (pf, ana, &#x27;folga&#x27;, v_ag.inicio, v_ag.fim, &#x27;teste&#x27;) ;
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 0, &#x27;B3: agendamento em bloqueio não recebe lembrete&#x27;;
+    -- B5 aproveita o bloqueio
+    select count(*) into v_n from public.bot_agendamentos_em_bloqueio(pf) e
+     where e.itens @&gt; &#x27;[{&quot;pet&quot;:&quot;Mel&quot;}]&#x27;;
+    assert v_n = 1, &#x27;B5: aviso de agendamento em bloqueio&#x27;;
+    delete from public.bloqueios where petshop_id = pf and motivo = &#x27;teste&#x27;;
+    update public.bot_config set limite_msgs_auto_semana = 1 where petshop_id = pf;
+    perform public.bot_registrar_mensagem(pf, tel, &#x27;saida&#x27;, &#x27;lembrete&#x27;);
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 0, &#x27;B3: limite semanal atingido deveria segurar o lembrete&#x27;;
+    update public.bot_config set limite_msgs_auto_semana = 3 where petshop_id = pf;
+    msgs := msgs || &#x27;OK B3 lembrete respeita bot desligado, bloqueio e limite semanal&#x27;::text;
+    msgs := msgs || &#x27;OK B5 dono avisado de agendamento em período bloqueado&#x27;::text;
+
+    -- B4
+    v_b := public.bot_lembrete_marcar(v_ag.id);
+    assert v_b, &#x27;B4: primeira marcação&#x27;;
+    v_b := public.bot_lembrete_marcar(v_ag.id);
+    assert not v_b, &#x27;B4: segunda marcação deveria ser recusada&#x27;;
+    v_j := public.bot_responder_lembrete(pf, &#x27;19988887777&#x27;, &#x27;sim&#x27;);
+    assert (v_j -&gt;&gt; &#x27;acao&#x27;) = &#x27;confirmado&#x27;, &#x27;B4: SIM&#x27;;
+    v_j := public.bot_responder_lembrete(pf, tel, &#x27;nao&#x27;);
+    assert not (v_j -&gt;&gt; &#x27;encontrado&#x27;)::boolean, &#x27;B4: lembrete já respondido não pode ser reaproveitado&#x27;;
+    -- NÃO: em outro agendamento
+    v_ag := public.reservar_agendamento(pf, p_mel, t_carla, array[s_banho],
+              ((amanha + time &#x27;11:00&#x27;) at time zone tz), ana, &#x27;manual&#x27;, null, true);
+    perform public.bot_lembrete_marcar(v_ag.id);
+    v_j := public.bot_responder_lembrete(pf, tel, &#x27;nao&#x27;);
+    assert (v_j -&gt;&gt; &#x27;acao&#x27;) = &#x27;cancelado&#x27; and (v_j -&gt;&gt; &#x27;telefone_avisos&#x27;) = &#x27;+5519911112222&#x27;, &#x27;B4: NÃO&#x27;;
+    select count(*) into v_n from public.agendamentos where id = v_ag.id and status = &#x27;cancelado&#x27;;
+    assert v_n = 1, &#x27;B4: NÃO deveria cancelar o agendamento&#x27;;
+    msgs := msgs || &#x27;OK B4 lembrete marcado uma vez; SIM confirma; NÃO cancela e traz o telefone do dono&#x27;::text;
+
+    -- B6
+    v_j := public.bot_conexao_evento(&#x27;INST-TESTE&#x27;, false, &#x27;teste&#x27;);
+    assert (v_j -&gt;&gt; &#x27;alertar_queda&#x27;)::boolean, &#x27;B6: queda deveria alertar&#x27;;
+    v_j := public.bot_conexao_evento(&#x27;INST-TESTE&#x27;, false, &#x27;teste&#x27;);
+    assert not (v_j -&gt;&gt; &#x27;alertar_queda&#x27;)::boolean, &#x27;B6: queda repetida não alerta antes de 6 h&#x27;;
+    v_j := public.bot_conexao_evento(&#x27;INST-TESTE&#x27;, true, &#x27;teste&#x27;);
+    assert (v_j -&gt;&gt; &#x27;alertar_volta&#x27;)::boolean, &#x27;B6: volta deveria avisar&#x27;;
+    v_j := public.bot_conexao_evento(&#x27;INST-NAO-EXISTE&#x27;, false);
+    assert not (v_j -&gt;&gt; &#x27;encontrado&#x27;)::boolean, &#x27;B6: instância desconhecida&#x27;;
+    msgs := msgs || &#x27;OK B6 conexão: alerta na queda, sem repetição, aviso na volta&#x27;::text;
+
+    -- B7
+    perform public.bot_registrar_erro(&#x27;teste&#x27;, &#x27;nó&#x27;, &#x27;erro de teste&#x27;, &#x27;1&#x27;, null, pf);
+    select count(*) into v_n from public.fluxo_erros where workflow = &#x27;teste&#x27;;
+    assert v_n = 1, &#x27;B7: erro registrado&#x27;;
+    assert not has_function_privilege(&#x27;authenticated&#x27;, &#x27;public.bot_envio(uuid)&#x27;, &#x27;execute&#x27;),
+      &#x27;B7: bot_envio não pode ser executável pelo usuário logado (expõe o token)&#x27;;
+    assert not has_function_privilege(&#x27;authenticated&#x27;, &#x27;public.bot_responder_lembrete(uuid, text, text)&#x27;, &#x27;execute&#x27;),
+      &#x27;B7: bot_responder_lembrete fechado&#x27;;
+    assert has_function_privilege(&#x27;service_role&#x27;, &#x27;public.bot_envio(uuid)&#x27;, &#x27;execute&#x27;), &#x27;B7: service_role executa&#x27;;
+    msgs := msgs || &#x27;OK B7 log de erro e RPCs fechadas para o usuário logado&#x27;::text;
+
+    -- B8
+    update public.bot_config set canal = &#x27;zapi&#x27; where petshop_id = pf;
+    assert public.bot_petshop_teste(&#x27;pet-feliz-teste&#x27;) is null, &#x27;B8: canal zapi não pode aparecer no canal de teste&#x27;;
+    update public.bot_config set canal = &#x27;teste&#x27; where petshop_id = pf;
+    assert public.bot_petshop_teste(&#x27;pet-feliz-teste&#x27;) = pf, &#x27;B8: canal teste deveria achar o Pet Feliz&#x27;;
+    assert public.bot_petshop_teste(&#x27;pet-rival-teste&#x27;) is null, &#x27;B8: Pet Rival não está no canal de teste&#x27;;
+    assert not has_function_privilege(&#x27;authenticated&#x27;, &#x27;public.bot_petshop_teste(text)&#x27;, &#x27;execute&#x27;), &#x27;B8: fechada para o usuário logado&#x27;;
+    msgs := msgs || &#x27;OK B8 canal de teste só alcança pet shop marcado como teste&#x27;::text;
+
+    raise exception &#x27;ROLLBACK_ACEITE&#x27;;
+  exception
+    when raise_exception then
+      if sqlerrm &lt;&gt; &#x27;ROLLBACK_ACEITE&#x27; then
+        return next &#x27;FALHOU: &#x27; || sqlerrm; return;
+      end if;
+    when assert_failure then
+      return next &#x27;FALHOU &#x27; || sqlerrm; return;
+  end;
+  foreach v_t in array msgs loop return next v_t; end loop;
+  return next &#x27;ACEITE BOT OK ✅ (nada foi gravado)&#x27;;
+end $$;
+
+select * from private.aceite_bot();
+</code></pre></div></span></div>
+      <div class="passo"><input type="checkbox" id="s5"><span class="corpo"><span class="t">Me mandar o JSON de <code>bot_petshop_info</code></span><span class="d"><span>O motor lê <code>nome</code>, <code>saudacao</code>, <code>endereco</code> e <code>telefone_contato</code>. Se o arquivo 12 usa outras chaves, eu ajusto o motor antes do passo 3.</span>
+        <div class="cod"><span class="rot">SQL</span><button class="copiar" type="button">Copiar</button><pre><code>select public.bot_petshop_info('11111111-1111-4111-8111-111111111111');</code></pre></div></span></span></div>
+    </div>
+    <div class="fase">
+      <h3>Pet Feliz no canal de teste</h3>
+      <div class="passo"><input type="checkbox" id="s6"><span class="corpo"><span class="t">Ligar o bot do Pet Feliz no canal de teste</span><span class="d"><span>O celular de avisos é opcional no teste: os avisos ao dono aparecem no próprio chat, mas só se o campo estiver preenchido e for diferente do telefone da conversa.</span>
+        <div class="cod"><span class="rot">SQL</span><button class="copiar" type="button">Copiar</button><pre><code>update public.bot_config
+   set canal = 'teste',
+       telefone_avisos = '+5519911112222',   -- qualquer número diferente do tutor de teste
+       pausa_humana_horas = 1,
+       ativo = true
+ where petshop_id = '11111111-1111-4111-8111-111111111111';
+
+select p.slug, bc.canal, bc.ativo, bc.nome_bot, bc.telefone_avisos
+  from public.bot_config bc join public.petshops p on p.id = bc.petshop_id
+ where bc.petshop_id = '11111111-1111-4111-8111-111111111111';</code></pre></div>
+        <span>Esperado: slug <code>pet-feliz-teste</code>, canal <code>teste</code>, ativo <code>true</code>, bot Luna.</span></span></span></div>
+    </div>
+  </section>
+
+  <!-- ============================ 3 N8N ============================ -->
+  <section class="painel" id="n8n" role="tabpanel" aria-labelledby="aba-n8n" hidden>
+    <div class="prosa">
+      <h2>3 · Credenciais, workflows e primeiro teste</h2>
+    </div>
+    <div class="fase">
+      <h3>Credenciais (Credentials, nomes exatos)</h3>
+      <div class="passo"><input type="checkbox" id="n1"><span class="corpo"><span class="t"><code>Supabase · secret n8n-bot</code> (Header Auth)</span><span class="d">Name <code>apikey</code>, Value = a Secret key <code>n8n-bot</code>. <b>Sem</b> <code>Authorization: Bearer</code>: a chave nova não é JWT, e a documentação do Supabase manda enviá-la só no <code>apikey</code>.</span></span></div>
+      <div class="passo"><input type="checkbox" id="n2"><span class="corpo"><span class="t"><code>Canal de teste · acesso</code> (Basic Auth)</span><span class="d">Usuário e senha da página do chat de teste. Guarde no gerenciador de senhas. A página é pública na internet, então a senha precisa ser forte.</span></span></div>
+      <div class="passo"><input type="checkbox" id="n3"><span class="corpo"><span class="t"><code>Resend · alertas</code> (Header Auth)</span><span class="d">No Resend, crie a API key <code>n8n-alertas</code> com Sending access só para <code>petcarehub.com.br</code>. No N8n: Name <code>Authorization</code>, Value <code>Bearer re_…</code>. O workflow de erros manda no máximo um e-mail por hora.</span></span></div>
+    </div>
+    <div class="fase">
+      <h3>Importar (nesta ordem)</h3>
+      <div class="passo"><input type="checkbox" id="n4"><span class="corpo"><span class="t"><code>00-rpc-supabase.json</code> e trocar <code>SEU-PROJETO</code></span><span class="d">No nó "Chamar RPC", troque <code>SEU-PROJETO</code> pelo ref do projeto. É o único lugar com o endereço do Supabase. Selecione a credencial do Supabase no nó.</span></span></div>
+      <div class="passo"><input type="checkbox" id="n5"><span class="corpo"><span class="t"><code>04-erros.json</code> e <code>05-canal-teste.json</code></span><span class="d"><span>Em cada nó "RPC …" (Execute Workflow), escolha <b>PetCare · RPC Supabase</b> na lista: o id muda na importação. São 1 no 04 e 2 no 05.</span><span>No 04, selecione a credencial do Resend no nó "Resend · e-mail". No 05, a credencial <code>Canal de teste · acesso</code> no nó "Chat de teste".</span><span>Os workflows 01, 02 e 03 ficam de fora por enquanto.</span></span></span></div>
+      <div class="passo"><input type="checkbox" id="n6"><span class="corpo"><span class="t">Error Workflow</span><span class="d">No 00 e no 05: Settings → Error workflow → <b>PetCare · Erros</b>.</span></span></div>
+      <div class="passo"><input type="checkbox" id="n7"><span class="corpo"><span class="t">Conferir o nó "Chat de teste"</span><span class="d"><span>Deve estar com: <i>Make Chat Publicly Available</i> ligado, modo <i>Hosted Chat</i>, autenticação <i>Basic Auth</i>, e <i>Response Mode</i> = <i>Using 'Respond to Webhook' Node</i>.</span><span>Se a versão do N8n mostrar outras opções de resposta, escolha a que usa nó de resposta, me diga o nome que aparece e eu ajusto o JSON.</span></span></span></div>
+      <div class="passo"><input type="checkbox" id="n7b"><span class="corpo"><span class="t">Ativar o 04 e o 05</span><span class="d">O chat só fica disponível com o workflow ativo. A URL aparece no nó "Chat de teste" (Chat URL).</span></span></div>
+    </div>
+    <div class="fase">
+      <h3>Primeiro teste</h3>
+      <div class="passo"><input type="checkbox" id="n8"><span class="corpo"><span class="t">Abrir o chat e mandar "#ajuda" e depois "oi"</span><span class="d"><span>Ponha <code>EXECUTIONS_DATA_SAVE_ON_SUCCESS=all</code> só durante este teste. Confira:</span>
+        <ul>
+          <li>"#ajuda" responde com a lista de comandos e o telefone da conversa;</li>
+          <li>"oi" responde com a saudação da Luna e o menu;</li>
+          <li>na execução, o sub-workflow "RPC Supabase" com <code>statusCode</code> 200 só com o <code>apikey</code>.</li>
+        </ul>
+        <span>Se o chat não mostrar a resposta, mas a execução terminar sem erro, me mande o que aparece na saída do nó "Responder no chat". O campo de resposta (<code>output</code>) é o ponto que mais muda entre versões. Depois volte a variável para <code>none</code>.</span></span></span></div>
+    </div>
+  </section>
+
+  <!-- ============================ 4 ACEITE ============================ -->
+  <section class="painel" id="aceite" role="tabpanel" aria-labelledby="aba-aceite" hidden>
+    <div class="prosa">
+      <h2>4 · Aceite pelo chat de teste</h2>
+      <p>No chat você é o tutor. Avisos ao dono aparecem no próprio chat, marcados com 📣. Comandos: <code>#novo</code> (tutor novo), <code>#tel</code> (escolher telefone), <code>#dono texto</code> (dono responde pelo celular), <code>#devolver</code>, <code>#lembrete</code>, <code>#estado</code>.</p>
+      <p>No Pet Feliz (modo múltiplo), dois "Banho" no mesmo horário não conflitam. O conflito aparece com "Banho e tosa", que só a Ana faz.</p>
+    </div>
+
+    <div class="teste"><input type="checkbox" id="a1"><span class="corpo"><span class="n">1 · primeiro contato</span><span class="t"><b>O bot cadastra o tutor e o pet e agenda com a saudação do pet shop</b></span><span>"#novo" → "oi" → "1" → nome → nome do pet → porte → serviço → dia → horário → "1".</span><span class="esp">Saudação da Luna; resumo com preço; "Agendado! ✅" com o endereço do Pet Feliz, se cadastrado na aba Pet shop do painel.</span></span></div>
+    <div class="teste"><input type="checkbox" id="a2"><span class="corpo"><span class="n">2 · tutor conhecido</span><span class="t"><b>O bot oferece o pet já cadastrado</b></span><span>Na mesma conversa: "oi" → "1". Depois, "#tel 19966665555" (a Elisa, cliente do Pet Rival com consentimento) → "oi" → "1".</span><span class="esp">Você: "Oi, &lt;nome&gt;!" e o pet do teste 1. Elisa: o Bob aparece na lista sem nenhuma menção ao Pet Rival.</span></span></div>
+    <div class="teste"><input type="checkbox" id="a3"><span class="corpo"><span class="n">3 · feriado e folga</span><span class="t"><b>Feriado e folga não aparecem</b></span><span>No painel, bloqueie um dia inteiro da próxima semana (feriado) e uma folga da Ana num dia útil. No chat, peça "Banho e tosa".</span><span class="esp">O feriado some da lista de dias. No dia da folga, os horários de "Banho e tosa" somem (só a Ana faz).</span></span></div>
+    <div class="teste"><input type="checkbox" id="a4"><span class="corpo"><span class="n">4 · conflito</span><span class="t"><b>Segunda reserva no mesmo horário recebe outra opção, sem erro</b></span><span>No chat, escolha "Banho e tosa" e um horário, e pare no resumo. No painel, crie um "Banho e tosa" no mesmo horário. Volte ao chat e responda "1".</span><span class="esp">"Esse horário acabou de ser reservado. 😕" e a lista nova. Nenhuma mensagem de erro.</span></span></div>
+    <div class="teste"><input type="checkbox" id="a5"><span class="corpo"><span class="n">5 · consultar e cancelar</span><span class="t"><b>Consulta, cancelamento e prazo mínimo</b></span><span>"2" lista os agendamentos. "3" → escolha um de outro dia. Depois crie no painel um agendamento para daqui a menos de 2 h nesse telefone e mande "3".</span><span class="esp">O primeiro cancela e aparece "📣 … Cancelamento pelo WhatsApp". O de menos de 2 h não aparece para cancelar: o bot diz que o prazo passou.</span></span></div>
+    <div class="teste"><input type="checkbox" id="a6"><span class="corpo"><span class="n">6 · pausa humana</span><span class="t"><b>O dono responde, o bot pausa e depois volta</b></span><span>"#dono já te respondo" → "1" → "#estado" → "#devolver" → "oi". Para testar a volta sozinha, use a pausa de 1 h ou o SQL abaixo.</span><span class="esp">Depois do #dono, o bot fica em silêncio e #estado mostra <code>humano</code>. Depois do #devolver, "oi" recebe o menu.</span>
+      <div class="cod"><span class="rot">SQL · encerrar a pausa agora</span><button class="copiar" type="button">Copiar</button><pre><code>update public.bot_conversas set humano_ate = now() - interval '1 minute'
+ where petshop_id = '11111111-1111-4111-8111-111111111111' and estado = 'humano';</code></pre></div></span></div>
+    <div class="teste"><input type="checkbox" id="a7"><span class="corpo"><span class="n">7 · lembrete</span><span class="t"><b>O lembrete sai e SIM e NÃO atualizam o status</b></span><span>Tenha dois agendamentos confirmados para amanhã neste telefone. "#lembrete" → "sim". "#lembrete" de novo → "não".</span><span class="esp">Lembrete com SIM/NÃO; "Confirmado para…"; depois "cancelei…", status cancelado no painel e aviso 📣 ao dono. Um terceiro "#lembrete" não reenvia.</span></span></div>
+    <div class="teste"><input type="checkbox" id="a9"><span class="corpo"><span class="n">9 · painel</span><span class="t"><b>Tudo aparece na agenda do painel</b></span><span>Abra a agenda do Pet Feliz e rode a consulta abaixo.</span><span class="esp">Agendamentos com origem bot e status certos. Mensagens no log com canal <code>teste</code>. Nenhum erro inesperado em <code>fluxo_erros</code>.</span>
+      <div class="cod"><span class="rot">SQL · conferência</span><button class="copiar" type="button">Copiar</button><pre><code>select a.inicio at time zone 'America/Sao_Paulo' as quando, a.status, a.origem, p.nome as pet
+  from public.agendamentos a join public.pets p on p.id = a.pet_id
+ where a.petshop_id = '11111111-1111-4111-8111-111111111111' and a.origem = 'bot'
+ order by a.inicio;
+
+select canal, direcao, tipo, status, count(*)
+  from public.mensagens_log
+ where petshop_id = '11111111-1111-4111-8111-111111111111'
+ group by 1, 2, 3, 4 order by 1, 2, 3;
+
+select * from public.fluxo_erros order by criado_em desc limit 10;</code></pre></div></span></div>
+
+    <div class="aviso"><b>O que fica para o provedor</b><p>O teste 8 (queda da conexão), o cron das 10h com envio real e a pausa disparada pelo celular de verdade dependem do provedor de WhatsApp. Ficam na aba "WhatsApp · em espera".</p></div>
+    <div class="aviso ok"><b>Depois do aceite</b><p>Volte <code>pausa_humana_horas</code> para 4 e <code>EXECUTIONS_DATA_SAVE_ON_SUCCESS</code> para <code>none</code>. Me conte o resultado para eu passar os ◐ dos documentos para ✅.</p></div>
+  </section>
+
+  <!-- ============================ WHATSAPP (EM ESPERA) ============================ -->
+  <section class="painel" id="whatsapp" role="tabpanel" aria-labelledby="aba-whatsapp" hidden>
+    <div class="aviso">
+      <b>Em espera: provedor em decisão</b>
+      <p>Os workflows <code>01</code>, <code>02</code> e <code>03</code> foram escritos para a Z-API clássica (QR Code, payload <code>ReceivedCallback</code>, header <code>Client-Token</code>). O Omni usa outro formato. Escolhido o provedor, eu adapto essas três peças e completo esta aba. O que segue vale para qualquer provedor.</p>
+    </div>
+    <div class="prosa">
+      <h2>O que o provedor precisa oferecer</h2>
+      <ul>
+        <li><b>Mensagem enviada pelo próprio número</b> chegando no webhook, com como diferenciar o que saiu pela API do que saiu pelo celular. Sem isso, a pausa automática (BT-18) não funciona.</li>
+        <li><b>Mídia não descartada no provedor:</b> o bot responde que só lê texto (BT-16).</li>
+        <li><b>Evento de queda</b> ou um endpoint de status, para o alerta (PL-03).</li>
+        <li><b>Id da mensagem enviada</b> na resposta do envio, para o log e para reconhecer o eco.</li>
+        <li><b>Token por número</b> guardado no Vault, lido por <code>bot_envio</code>.</li>
+        <li><b>Na API oficial:</b> lembrete como template de utilidade aprovado e avisos ao dono fora da janela de 24 h, o que pede template ou outro canal (e-mail, painel).</li>
+      </ul>
+      <h2>Testes que só existem com o provedor</h2>
+      <ul>
+        <li>8 · Queda da conexão gera e-mail em <code>suporte@</code> e aviso na volta.</li>
+        <li>6 real · o dono responde pelo celular e o bot pausa; o eco das mensagens do bot não pausa.</li>
+        <li>7 real · o cron das 10h manda o lembrete; rodar de novo não duplica.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================ DECISÕES ============================ -->
+  <section class="painel" id="decisoes" role="tabpanel" aria-labelledby="aba-decisoes" hidden>
+    <div class="prosa">
+      <h2>Decisões desta etapa</h2>
+      <p>Os trechos prontos para o documento-mestre estão na aba "Atualizar docs".</p>
+    </div>
+    <div class="grade">
+      <div class="cartao"><span class="k">Canal de WhatsApp</span><h3>Em reavaliação; canal de teste enquanto isso</h3><p>A Z-API virou Omni, só com API oficial. O bot fica pronto e aprovado pelo chat do N8n, e o provedor entra como um adaptador. O provedor está sendo escolhido em outro chat.</p></div>
+      <div class="cartao"><span class="k">Bloqueio</span><h3>Sem lembrete, aviso ao dono, bot não avisa o tutor</h3><p>Agendamento em feriado ou folga não recebe lembrete. Às 10h da véspera, o dono recebe a lista com o telefone de cada tutor e resolve pelo painel. Remarcação pelo bot é BT-07, do F2.</p></div>
+      <div class="cartao"><span class="k">Menu</span><h3>Quatro opções e serviços do catálogo</h3><p>1) agendar 2) ver 3) cancelar 4) equipe. O serviço vem de <code>bot_servicos</code>, com preço do porte, em vez de banho e tosa fixos no menu.</p></div>
+      <div class="cartao"><span class="k">Chaves</span><h3>Secret key <code>n8n-bot</code> em credencial</h3><p>Chave dedicada, revogável sozinha, guardada como credencial do N8n e enviada só no <code>apikey</code>. Nenhum segredo em variável de ambiente.</p></div>
+      <div class="cartao"><span class="k">Motor em código</span><h3>Uma fonte, independente do provedor</h3><p>O motor é JavaScript puro, versionado e simulado; o N8n só faz o laço e as chamadas. Foi o que permitiu ligar o canal de teste sem tocar nas regras. Custo: não editar o código pelo N8n.</p></div>
+      <div class="cartao"><span class="k">Arquitetura para escalar</span><h3>Crescer por gatilho</h3><p>Gateway, RabbitMQ e Redis ficam para quando houver motivo. Ordem: adaptador por provedor agora; N8n em modo fila quando o tempo de resposta subir; motor fora do N8n quando o laço pesar; fila própria só com mais de um consumidor.</p></div>
+    </div>
+    <h2>Limites conhecidos</h2>
+    <div class="prosa"><ul>
+      <li><b>Mensagens simultâneas:</b> duas mensagens do mesmo tutor quase juntas rodam em paralelo e podem disputar o estado. Aceitável no MVP.</li>
+      <li><b>Espécie:</b> pet cadastrado pelo bot nasce como cão. O painel corrige.</li>
+      <li><b>Telefones do chat de teste:</b> cada conversa ganha um telefone fictício <code>+5599…</code>, gravado como tutor do Pet Feliz de teste. O arquivo 11 limpa tudo antes da POC.</li>
+      <li><b>Opt-out (TP-12):</b> o lembrete respeita <code>aceita_mensagens</code>, mas o bot ainda não entende "sair". É a rodada C.</li>
+    </ul></div>
+    <h2>Fontes consultadas</h2>
+    <div class="prosa"><ul>
+      <li>Supabase, migração para publishable e secret keys: supabase.com/docs/guides/getting-started/migrating-to-new-api-keys</li>
+      <li>N8n 2.0, mudanças incompatíveis: docs.n8n.io/2-0-breaking-changes</li>
+      <li>Z-API Omni, documentação: developer.omni.z-api.io</li>
+    </ul></div>
+  </section>
+
+  <!-- ============================ DOCS ============================ -->
+  <section class="painel" id="docs" role="tabpanel" aria-labelledby="aba-docs" hidden>
+    <div class="prosa">
+      <h2>Atualizar o documento-mestre e o Mapa</h2>
+      <p>Cada item tem o texto exato a localizar e o texto que entra no lugar. Os do documento-mestre foram conferidos contra a rev. 3.11: cada trecho existe uma vez. Os do Mapa usam o texto visível das células.</p>
+    </div>
+    <div class="progresso"><span>Aplicados</span><span class="barra"><i id="barra-docs"></i></span><span id="txt-docs">0 de 0</span></div>
+    <h2>Documento-mestre · aplicar agora</h2>
+    <details class="troca"><summary><span class="num">01</span><span>Cabeçalho: versão</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm1"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>&gt; **Versão:** 06/11/2026, rev. 3.11 (rodada 4 do painel: dados do pet shop, feriados e bloqueios, convite) · **Idioma:** português (BR).</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>&gt; **Versão:** 06/11/2026, rev. 3.12 (etapa 5: bot construído com canal de teste; canal de WhatsApp em reavaliação) · **Idioma:** português (BR).</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">02</span><span>Cabeçalho: guia do schema e guia do bot</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm2"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>&gt; **Schema do banco:** o guia &quot;Schema PetCare Hub rev. 3&quot; (https://claude.ai/artifact/1pQxA8WDrXx7EBNtZ1TVVX) traz os arquivos SQL 00 a 11, a matriz de acessos, o motor de agenda e a adaptação do bot.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>&gt; **Schema do banco:** o guia &quot;Schema PetCare Hub rev. 3&quot; (https://claude.ai/artifact/1pQxA8WDrXx7EBNtZ1TVVX) traz os arquivos SQL 00 a 11, a matriz de acessos e o motor de agenda. Os arquivos 12 a 14 estão no repositório.
+&gt; **Bot:** o guia &quot;Bot PetCare no N8n&quot; (https://claude.ai/artifact/R41HCLBBDxjr5yHycNxPR1) traz os arquivos 13 e 14, o N8n, o canal de teste e o aceite da etapa 5.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">03</span><span>0. Resumo, item 5</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm3"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>WhatsApp pela **Z-API** no MVP e na POC; API oficial da Meta só ao escalar (seção 7.1).</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Canal de WhatsApp **em reavaliação** desde 06/11/2026: a Z-API virou Z-API Omni, só com API oficial da Meta (seção 7.1).</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">04</span><span>0. Resumo, item 8</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm4"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>O workflow do bot foi montado, mas não foi testado e precisa ser adaptado ao schema novo.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>O bot foi reescrito para chamar só funções do banco (arquivos 13 e 14 e workflows em `n8n/`) e roda pelo **canal de teste** (chat do N8n), sem WhatsApp; falta o provedor de WhatsApp.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">05</span><span>5. POC: pré-requisitos</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm5"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>canal de WhatsApp = Z-API (✅ decidido 06/11/2026), Z-API paga e chip definitivo, reativar o Railway (Pro),</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>canal de WhatsApp (em reavaliação desde 06/11/2026; seção 7.1) com plano pago e chip definitivo, Railway no Pro, **bot aprovado no canal de teste** (◐ construído e simulado em 06/11/2026), **celular de avisos do dono** (`bot_config.telefone_avisos`),</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">06</span><span>5. POC: começar pelo painel</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm6"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Ordem de ativação:** o dono usa a agenda do painel por 1 semana **antes** de o bot ser ligado.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Ordem de ativação:** o dono usa a agenda do painel por 1 semana **antes** de o bot ser ligado.
+- **Linha de base do no-show:** se o canal de WhatsApp atrasar, a POC pode começar só com o painel. As semanas sem bot dão a taxa de no-show de partida, sem a qual a meta de −50% não tem com o que comparar (RL-03).</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">07</span><span>7. Tabela da stack: WhatsApp</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm7"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| WhatsApp | **Z-API** (instância web), decidido em 06/11/2026; API oficial da Meta só ao escalar | 1 número por pet shop |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| WhatsApp | **Em reavaliação** (06/11/2026): a Z-API virou Omni, só API oficial. Opções na seção 7.1. Enquanto isso, **canal de teste** (chat do N8n) | 1 número por pet shop |</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">08</span><span>7. Repositório: schema</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm8"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| `supabase/schema` | Arquivos 00 a 12 do schema rev. 3 (12 = rodada 4 do painel) |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| `supabase/schema` | Arquivos 00 a 14 do schema rev. 3 (12 = rodada 4 do painel; 13 = RPCs do bot no N8n; 14 = canal de teste) |</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">09</span><span>7. Repositório: testes</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm9"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| `supabase/testes` | `aceite_painel.sql` (A1–A4) e `aceite_rodada4.sql` (A5–A7) |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| `supabase/testes` | `aceite_painel.sql` (A1–A4), `aceite_rodada4.sql` (A5–A7) e `aceite_bot.sql` (B1–B8) |</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">10</span><span>7. Repositório: n8n</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm10"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| `n8n/` | Exports dos workflows (revisar credenciais antes de commitar) |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| `n8n/` | Bot e automações: `src/motor-conversa.js` (fonte do motor), `build.js` (gera `workflows/00` a `05`), `test/simular.js` (simula conversas contra um Postgres). Os JSON levam só o nome das credenciais |</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">11</span><span>7.1 Decisão do canal (parágrafo inteiro)</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm11"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>**Decisão (06/11/2026): Z-API no MVP e na POC; API oficial da Meta só ao escalar.** Motivos: a Z-API não exige verificação da empresa (a Harpia Tech ainda não tem CNPJ) e já está configurada. Gatilhos para migrar: volume de clientes em que a diferença de custo pese (~R$55 por cliente/mês, seção 10), quedas de sessão ou banimento, ou empresa da Rota A aberta. O schema já suporta os dois canais (`bot_config.zapi_instance_id` ou `meta_phone_number_id`). Confirmar a tabela de preços oficial da Meta antes de migrar.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>**Canal em reavaliação (06/11/2026).** A decisão do mesmo dia (Z-API por QR Code no MVP e na POC) caiu: a Z-API passou a vender a Z-API Omni, que só conecta pela API oficial da Meta. O canal por QR Code saiu da documentação do Omni em 03/11/2026. A decisão está sendo tomada em outro chat do projeto, com estes critérios:
+- custo por pet shop por mês, com as tarifas da Meta (no Brasil, desde 01/10/2026, utilidade R$0,035 por mensagem e 1.000 mensagens de atendimento grátis por número por mês);
+- exigência de CNPJ da Harpia;
+- risco de banimento;
+- esforço de operação para um dev part-time;
+- mensagem enviada pelo dono no celular chegando por webhook (necessária para pausar o bot).
+
+Opções em comparação: provedor não oficial como serviço (Zapster e similares), Evolution API no Railway, API oficial por provedor credenciado (Omni, Twilio, Telnyx, 360dialog) e a conta antiga da Z-API clássica.
+- **Enquanto isso:** o bot roda pelo canal de teste (chat do N8n, arquivo 14). O motor não depende do provedor; trocar de provedor muda só a leitura do webhook, o envio e o alerta de queda.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">12</span><span>7.2 Ao reativar o Railway</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm12"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>4. Depois, migrar para `harpiatechstudio.com.br`, com os mesmos três ajustes.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>4. Depois, migrar para `harpiatechstudio.com.br`, com os mesmos três ajustes.
+5. **Atualização (06/11/2026):** o Railway foi refeito do zero (projeto novo do N8n com Postgres), porque a conta antiga da Z-API e o workflow antigo foram descartados. Guardar a `N8N_ENCRYPTION_KEY` nova no gerenciador de senhas e fixar a versão da imagem do N8n (não usar `latest`). Durante o desenvolvimento, o plano Hobby basta; o Pro continua obrigatório antes da POC.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">13</span><span>7.2 Variáveis de ambiente do N8n</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm13"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>**Variáveis de ambiente do N8n (só nomes):**
+`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `N8N_BASIC_AUTH_ACTIVE/USER/PASSWORD`, `EXECUTIONS_DATA_SAVE_ON_ERROR=all`, `EXECUTIONS_DATA_SAVE_ON_SUCCESS=none`, além das geradas pelo template (`DB_POSTGRESDB_*`, `N8N_ENCRYPTION_KEY`, `N8N_EDITOR_BASE_URL`, `WEBHOOK_URL` etc.).
+- **Saíram:** `PETSHOP_ID`, `ZAPI_INSTANCE_ID` e `ZAPI_TOKEN`. O pet shop é descoberto pela instância que recebeu a mensagem (`bot_config.zapi_instance_id` ou `meta_phone_number_id`), e o token de cada pet shop fica no **Supabase Vault**, lido pela função `bot_token(petshop)`. Assim um único N8n atende vários pet shops.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>**Variáveis de ambiente do N8n (só nomes):**
+`N8N_EDITOR_BASE_URL`, `WEBHOOK_URL`, `GENERIC_TIMEZONE=America/Sao_Paulo`, `TZ=America/Sao_Paulo`, `N8N_PROXY_HOPS=1`, `EXECUTIONS_DATA_SAVE_ON_ERROR=all`, `EXECUTIONS_DATA_SAVE_ON_SUCCESS=none`, além das geradas pelo template (`DB_POSTGRESDB_*`, `N8N_ENCRYPTION_KEY` etc.).
+- **Saíram:** `PETSHOP_ID`, `ZAPI_INSTANCE_ID`, `ZAPI_TOKEN`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` e `N8N_BASIC_AUTH_*` (o login do N8n é a conta de owner). O pet shop é descoberto pela instância que recebeu a mensagem, e o token de cada pet shop fica no **Supabase Vault**, lido por `bot_envio(petshop)`. Assim um único N8n atende vários pet shops.
+- **Segredos ficam em credenciais do N8n** (cifradas com a `N8N_ENCRYPTION_KEY`), não em variáveis: o N8n 2.x bloqueia `$env` nos nós por padrão.
+    - `Supabase · secret n8n-bot`: header `apikey` com a Secret key dedicada `n8n-bot`, **sem** `Authorization: Bearer`, porque a chave nova não é JWT.
+    - `Canal de teste · acesso`: usuário e senha da página do chat de teste.
+    - `Resend · alertas`: `Authorization: Bearer` da API key `n8n-alertas`, só envio, só `petcarehub.com.br`.
+    - A credencial do provedor de WhatsApp entra quando ele for escolhido.
+- O endereço do Supabase fica num lugar só: o nó &quot;Chamar RPC&quot; do sub-workflow `PetCare · RPC Supabase`.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">14</span><span>7.2 Acessos: chaves dedicadas</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm14"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Pendência:** confirmar se o segredo `PETCARE_SECRET_KEY` foi criado (chave dedicada `edge-convidar-membro`), para não depender da chave legada.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Pendência:** confirmar se o segredo `PETCARE_SECRET_KEY` foi criado (chave dedicada `edge-convidar-membro`), para não depender da chave legada.
+- **Uma Secret key por consumidor (decidido em 06/11/2026):** `edge-convidar-membro` para a Edge Function e `n8n-bot` para o N8n. Cada uma pode ser revogada sem derrubar a outra.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">15</span><span>8. Testes de aceite</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm15"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Os dois rodam no SQL Editor e desfazem tudo no final. Resultados esperados: &quot;ACEITE OK&quot; e &quot;ACEITE RODADA 4 OK&quot;.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Também há `aceite_bot.sql` (`private.aceite_bot()`, B1–B8) para as RPCs dos arquivos 13 e 14: serviços do bot, eco do fromMe, filtros do lembrete, SIM/NÃO, aviso de bloqueio, alerta de conexão, permissões e canal de teste.
+
+Os três rodam no SQL Editor e desfazem tudo no final. Resultados esperados: &quot;ACEITE OK&quot;, &quot;ACEITE RODADA 4 OK&quot; e &quot;ACEITE BOT OK&quot;.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">16</span><span>8. Tabela de arquivos: linhas 13 e 14</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm16"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| 12 | Rodada 4 do painel: `petshops.telefone_contato`, bucket `logos` com políticas por pasta do pet shop, `bot_petshop_info` e `admin_vincular_membro` (as duas só para `service_role`) |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| 12 | Rodada 4 do painel: `petshops.telefone_contato`, bucket `logos` com políticas por pasta do pet shop, `bot_petshop_info` e `admin_vincular_membro` (as duas só para `service_role`) |
+| 13 | Bot no N8n: estados `aguardando_nome`, `aguardando_nome_pet` e `aguardando_servico`; `bot_config.telefone_avisos` e `conexao_alertado_em`; tabela `fluxo_erros`; RPCs `bot_servicos`, `bot_envio`, `bot_aberto_agora`, `bot_registrar_mensagem`, `bot_registrar_fromme`, `bot_lembrete_marcar`/`desmarcar`, `bot_responder_lembrete`, `bot_agendamentos_em_bloqueio`, `bot_instancias_monitoradas`, `bot_conexao_evento` e `bot_registrar_erro`; `lembretes_pendentes` refeita. Tudo só para `service_role` |
+| 14 | Canal de teste: `&#x27;teste&#x27;` aceito em `bot_config.canal` e `mensagens_log.canal`; `bot_petshop_teste(slug)` só acha pet shop com `canal = &#x27;teste&#x27;` |</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">17</span><span>9. Menu</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm17"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>**Menu:** 1) Agendar banho · 2) Agendar tosa · 3) Agendar banho+tosa · 4) Consultar agendamento · 5) Cancelar agendamento. Remarcação entra no F2.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>**Menu:** 1) Agendar um horário · 2) Ver meus agendamentos · 3) Cancelar um agendamento · 4) Falar com a equipe. Ao agendar, o bot pergunta o pet e depois lista os serviços do pet shop para aquele porte, com preço (`bot_servicos`: estética, ativos, `disponivel_bot`, sem adicionais). &quot;0&quot; ou &quot;menu&quot; volta ao início em qualquer passo; &quot;agendar&quot;, &quot;cancelar&quot; e &quot;atendente&quot; também funcionam. Remarcação entra no F2.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">18</span><span>9. Máquina de estados</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm18"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| `aguardando_pet` → `aguardando_porte` → `aguardando_data` → `aguardando_hora` → `aguardando_confirmacao` | Fluxo de agendamento (pet já cadastrado pula `aguardando_porte`) |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| `aguardando_nome` → `aguardando_nome_pet` → `aguardando_porte` | Cadastro pelo bot: nome do tutor (só de quem não é conhecido no pet shop), nome e porte do pet novo. Pet cadastrado pelo bot nasce como cão; o painel corrige |
+| `aguardando_pet` → `aguardando_servico` → `aguardando_data` → `aguardando_hora` → `aguardando_confirmacao` | Fluxo de agendamento (pet já cadastrado ou compartilhado pula o cadastro) |</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">19</span><span>9. Workflow principal (trecho inteiro, do título até a linha da chamada das funções)</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm19"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>**Workflow principal (montado, não testado; adaptar ao schema rev. 3):**
+1. **Webhook** (POST, path `petcare-hub`, *Respond: Immediately*). Descobre o pet shop com `bot_petshop_por_instancia(instanceId)`, no lugar da variável `PETSHOP_ID`.
+2. **IF** `fromMe`: chama `bot_pausar_por_humano(petshop, telefone)`. Cada resposta do dono estende a pausa.
+3. **Supabase (RPC)** `bot_entrada(petshop, telefone)`: devolve estado, `dados_temp`, se o tutor é conhecido no pet shop, os pets dele e os pets compartilháveis. Já aplica o fim da pausa humana e o timeout. Cadastro pelo bot: `bot_cadastrar_tutor`, `cadastrar_pet` e `bot_vincular_pet_compartilhado`.
+4. **IF/Switch por estado**: `novo` → boas-vindas; `idle` → menu; `menu` → Switch; `aguardando_*` → continua; `humano` e `bloqueado` → para.
+5. **Switch** numérico com `{{ $json.message.trim() }}`, igualdade &quot;1&quot;..&quot;5&quot; e **Fallback Output** ativo.
+6. **Data e hora:** `proximos_dias_com_vaga` e `horarios_livres_resumo`. **Confirmação:** `reservar_agendamento(..., &#x27;bot&#x27;)`; tratar a resposta com `code: &quot;23P01&quot;` (vem como HTTP 400) como horário tomado e oferecer os próximos. **Consultar e cancelar:** `bot_agendamentos_tutor` e `bot_cancelar` (respeita a antecedência mínima de cancelamento).
+7. **Cada passo** grava o estado com `bot_salvar_estado(conversa, estado, dados_temp)`.
+8. **Set** monta a variável `resposta`; **HTTP Request** único no final, enviando pelo canal do pet shop com o token lido por `bot_token(petshop)`.
+
+- Chamada das funções pelo N8n: `POST {SUPABASE_URL}/rest/v1/rpc/&lt;funcao&gt;` com a Secret key. **Confirmar no primeiro teste** se basta o header `apikey` ou se também é preciso `Authorization: Bearer`.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>**Workflows (construídos em 06/11/2026):** em `n8n/workflows/`, gerados por `n8n/build.js`. O N8n não lê nem grava tabela: só chama funções do banco.
+1. **`00 · RPC Supabase`** (sub-workflow usado por todos): `POST {Supabase}/rest/v1/rpc/&lt;fn&gt;` com o header `apikey` (Secret key `n8n-bot`; **sem** `Authorization: Bearer`, porque a chave nova não é JWT). Devolve `{ status, body }` e não quebra o fluxo por HTTP 4xx.
+2. **Motor** (`n8n/src/motor-conversa.js`): função pura, independente do provedor. Pede uma função do banco por vez e reaproveita os resultados já obtidos, então cada escrita roda uma vez só.
+   - Ordem típica: pet shop do canal → `bot_registrar_mensagem` (entrada) → `bot_entrada` → `bot_responder_lembrete` (se SIM/NÃO) → passos do fluxo → `bot_salvar_estado` → `bot_envio`.
+   - **Conflito:** `reservar_agendamento(..., &#x27;bot&#x27;)` com `code: &quot;23P01&quot;` (HTTP 400) vira &quot;esse horário acabou de ser reservado&quot; e uma nova lista de horários.
+   - **fromMe:** `bot_registrar_fromme` ignora o eco das mensagens do próprio bot e pausa o bot quando a mensagem é do dono.
+   - Bot desligado (`bot_config.ativo = false`) ou estado `humano`/`bloqueado`: silêncio.
+3. **`05 · Canal de teste`:** chat do N8n (Chat Trigger, com usuário e senha) ligado ao mesmo motor. Só alcança pet shop com `bot_config.canal = &#x27;teste&#x27;`. A resposta e os avisos ao dono aparecem no chat. Comandos: `#novo`, `#tel`, `#dono` (simula o dono respondendo), `#devolver`, `#lembrete`, `#estado` e `#ajuda`.
+4. **`01 · Bot conversa`, `02 · Lembretes 24h` e `03 · Conexão WhatsApp`:** escritos para a Z-API clássica; serão adaptados ao provedor escolhido (leitura do webhook, envio, alerta de queda e, na API oficial, lembrete por template). **`04 · Erros`** independe do canal.
+
+- **Simulação:** `n8n/test/simular.js` roda conversas completas contra um Postgres com o schema (11 cenários OK em 06/11/2026, inclusive o canal de teste). Ao mudar o motor: simular, rodar o build e reimportar os workflows que o usam. Não editar o código dentro do N8n.
+- **Avisos ao dono** (transbordo, cancelamento, agenda de amanhã em bloqueio) vão para `bot_config.telefone_avisos`, o celular pessoal do dono, diferente do número do bot. Sem esse número, o aviso não sai. Na API oficial, esses avisos ficam fora da janela de 24 h: considerar e-mail ou o painel.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">20</span><span>9. Lembretes</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm20"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>**Lembretes:** cron diário às 10h chama `lembretes_pendentes()`, que já filtra os agendamentos `confirmado` de amanhã no fuso de cada pet shop, só de tutores que aceitam mensagens e que ainda não receberam o lembrete. Envia SIM/NÃO, grava em `lembretes` e `mensagens_log`, atualiza o status e avisa o dono em caso de cancelamento. Na API oficial, o lembrete é um modelo de mensagem de &quot;utilidade&quot; aprovado pela Meta.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>**Lembretes (CM-02):** cron diário às 10h (fuso America/Sao_Paulo) chama `lembretes_pendentes()`. Ela devolve os agendamentos que atendem a todos estes filtros:
+- `confirmado` e marcado para amanhã no fuso de cada pet shop;
+- pet shop com bot ligado;
+- tutor que aceita mensagens;
+- ainda sem lembrete enviado;
+- **fora de período bloqueado**;
+- dentro do **limite semanal de mensagens automáticas** (`limite_msgs_auto_semana`, CM-10).
+
+Cada lembrete é marcado (`bot_lembrete_marcar`) antes do envio, para um cron duplicado não mandar duas vezes. Se o envio falhar, `bot_lembrete_desmarcar` libera para o dia seguinte. A resposta é tratada pelo bot com `bot_responder_lembrete` (lembrete sem resposta das últimas 36 h): SIM confirma; NÃO cancela e avisa o dono (CM-03). Na API oficial, o lembrete é um modelo de mensagem de &quot;utilidade&quot; aprovado pela Meta. No canal de teste, o comando `#lembrete` faz o mesmo para o telefone da conversa.
+- **Agendamento em período bloqueado (decidido em 06/11/2026):** não recebe lembrete. No mesmo cron, o dono recebe no celular de avisos a lista dos agendamentos de amanhã que caem em feriado ou folga, com o telefone de cada tutor, e resolve pelo painel. O bot **não** avisa o tutor nem oferece remarcação no MVP (remarcação é BT-07, F2).
+
+**Conexão (PL-03):** depende do provedor; o workflow `03` atual é da Z-API clássica. `bot_conexao_evento` grava `bot_config.conexao_status` e decide o alerta: na queda, de novo a cada 6 h enquanto continuar caído, e na volta. Alerta por e-mail (Resend, remetente `noreply@`) para `suporte@petcarehub.com.br`.
+
+**Erros (PL-04):** o workflow `04 · Erros` é o Error Workflow dos outros. Grava em `fluxo_erros` (só a Harpia lê) e manda no máximo um e-mail por hora, por causa do teto de 100 e-mails/dia do Resend gratuito. Falha numa função do banco durante a conversa também é registrada, e o tutor recebe &quot;tive um problema aqui; digite 4 para falar com a equipe&quot;.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">21</span><span>12. Concluído: workflow</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm21"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>- Workflow N8n montado. **Não testado; precisa ser adaptado ao schema rev. 3** (seção 9).</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Bot reescrito para as funções do banco** (06/11/2026):
+    - arquivos 13 e 14 e `aceite_bot.sql` (B1–B8 OK num Postgres 16 local com o schema 01–11);
+    - workflows `n8n/00` a `05`, com o motor simulado em 11 cenários;
+    - canal de teste no chat do N8n.
+    - Falta o provedor de WhatsApp (seção 7.1).</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">22</span><span>12. Próximos passos: item 10</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm22"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>10. ◐ Reativar Supabase (✅) e Railway; adaptar o bot às funções do banco (seção 9) e guardar o token do canal no Vault.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>10. ◐ Bot nas funções do banco: ✅ construído e simulado em 06/11/2026. Falta:
+    - implantar o Railway do zero e os workflows `00`, `04` e `05`;
+    - aprovar o bot pelo canal de teste;
+    - escolher o provedor de WhatsApp (seção 7.1) e adaptar os workflows `01` a `03`.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">23</span><span>12. Próximos passos: item 11</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm23"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>11. Lembrete 24h, avisos ao dono, alerta de queda do WhatsApp.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>11. ◐ Lembrete 24h, avisos ao dono, alerta de queda e log de erros: construídos com o item 10; o envio real depende do provedor.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">24</span><span>12. Ordem definida</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm24"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>5) **reativar o Railway em `n8n.` e adaptar o bot (Z-API) — próximo**.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>5) **bot**: construído em 06/11; canal de teste em implantação; provedor de WhatsApp em decisão (seção 7.1).</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">25</span><span>12. Decisões em aberto: bloqueio e itens novos</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm25"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Agendamento em período bloqueado:** hoje o painel avisa e marca, sem cancelar nem avisar o tutor. Decidir no passo 5 se o bot avisa o tutor e oferece remarcação. Até lá, `lembretes_pendentes` **não** filtra esses agendamentos, então o lembrete sairia para um dia bloqueado. Sugestão: não mandar lembrete de agendamento em bloqueio e avisar o dono.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>- ✅ **Agendamento em período bloqueado** (06/11/2026): sem lembrete; o dono recebe a lista no celular de avisos às 10h da véspera; o bot não avisa o tutor nem oferece remarcação no MVP (seção 9).
+- Campo &quot;celular para avisos&quot; (`bot_config.telefone_avisos`) no painel. Até existir, preencher por SQL no onboarding.
+- Pets cadastrados pelo bot nascem como cão; o painel corrige a espécie. Perguntar a espécie no bot só se a POC pedir.
+- Duas mensagens do mesmo tutor quase ao mesmo tempo rodam em paralelo no N8n e podem disputar o estado da conversa. Aceito no MVP; tratar se aparecer na POC.
+- **Arquitetura para escalar (avaliada em 06/11/2026):** a proposta com gateway, RabbitMQ e Redis fica para quando houver gatilho. Até lá, o caminho é:
+    1. adaptador por provedor (agora);
+    2. N8n em modo fila quando o tempo de resposta do bot subir (~50–100 clientes);
+    3. motor fora do N8n quando o laço de chamadas pesar;
+    4. fila própria só com mais de um consumidor das mesmas mensagens.</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">26</span><span>13. Decisões superadas: linhas novas (no fim da tabela)</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dm26"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>| Texto &quot;PetCare Hub&quot; no topo dos e-mails | Logo em PNG servida pelo painel | E-mail não exibe SVG; identidade da marca nos e-mails |</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>| Texto &quot;PetCare Hub&quot; no topo dos e-mails | Logo em PNG servida pelo painel | E-mail não exibe SVG; identidade da marca nos e-mails |
+| Z-API (QR Code) no MVP e na POC, decidida em 06/11/2026 | Canal em reavaliação; canal de teste enquanto isso | A Z-API virou Omni, só com API oficial da Meta |
+| Menu fixo: 1) banho 2) tosa 3) banho+tosa 4) consultar 5) cancelar | 1) agendar 2) ver 3) cancelar 4) equipe; serviços listados do catálogo do pet shop | Serviços são personalizáveis por pet shop |
+| Chaves do Supabase em variáveis do N8n (`SUPABASE_*`) | Credencial `Supabase · secret n8n-bot` com Secret key dedicada | N8n 2.x bloqueia `$env` nos nós; credencial é cifrada e revogável |
+| &quot;Confirmar se a chamada de função precisa de `Authorization: Bearer`&quot; | Só o header `apikey` | A Secret key nova não é JWT |
+| Workflow do bot com IF/Switch por estado e um HTTP por função | Motor em código (`n8n/src/motor-conversa.js`) + sub-workflow de RPC | Testável fora do N8n; uma fonte só; independente do provedor |
+| `lembretes_pendentes` sem filtro de bloqueio nem de limite | Filtra bot desligado, bloqueio e limite semanal (CM-10) | Lembrete não sai para dia bloqueado |
+| Envio lendo `bot_token(petshop)` | `bot_envio(petshop)`: canal, instância, token e celular de avisos | Uma chamada por envio |
+| Reativar o Railway antigo | Railway refeito do zero | Workflow e conta antigos descartados |</code></pre></div></div></details>
+    <h2>Mapa de Funcionalidades · aplicar agora</h2>
+    <details class="troca"><summary><span class="num">01</span><span>Status de entrega: linha do bot</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp1"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Próximo: bot pela Z-API</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Construído (06/11): bot com canal de teste; provedor de WhatsApp em decisão</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">02</span><span>Status de entrega: observação da mesma linha</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp2"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Reativar o Railway em n8n. e adaptar o workflow às funções do banco</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Arquivos 13 e 14 e workflows n8n/00 a 05, simulados contra o schema. Falta implantar o canal de teste, aprovar o bot por ele e escolher o provedor de WhatsApp (a Z-API virou Omni, só API oficial). PL-10 em parte: canal e estado da conexão em bot_config</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">03</span><span>Ordem de construção: bot</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp3"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Próximo, pela Z-API: bot para agendar, consultar, cancelar, transbordo, escolha de pet já cadastrado e pausa automática</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>◐ Construído em 06/11/2026, com canal de teste (provedor de WhatsApp em decisão): bot para agendar, consultar, cancelar, transbordo, escolha de pet já cadastrado e pausa automática</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">04</span><span>Ordem de construção: lembrete</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp4"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Lembrete 24h e avisos ao dono</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>◐ Lembrete 24h e avisos ao dono (construídos com o bot; envio real depende do provedor)</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">05</span><span>Ordem de construção: relatórios</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp5"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Relatórios das duas métricas e alertas de queda</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Relatórios das duas métricas (podem começar antes do bot, para medir o no-show de partida) e alertas de queda (◐ construídos com o bot)</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">06</span><span>Decisões em aberto: canal</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp6"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>✅ Canal de WhatsApp decidido (06/11/2026): Z-API no MVP e na POC; API oficial da Meta só ao escalar</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Canal de WhatsApp em reavaliação (06/11/2026): a Z-API virou Omni, só API oficial. Comparar provedor não oficial, Evolution API e API oficial por provedor credenciado</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">07</span><span>M13 · PL-10</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp7"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Canal de WhatsApp por pet shop (Z-API no MVP; API oficial ao escalar) e estado da conexão</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Canal de WhatsApp por pet shop (provedor em decisão; canal de teste enquanto isso) e estado da conexão</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">08</span><span>M4 · BT-02</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="mp8"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>Menu numerado com fallback para resposta inválida</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>Menu numerado (agendar, ver, cancelar, falar com a equipe) com fallback para resposta inválida; serviços listados do catálogo do pet shop</code></pre></div></div></details>
+    <h2>Documento-mestre · só depois de escolher o provedor</h2>
+    <p>Estes trechos da seção 9 falam da configuração da Z-API. Deixe como estão até a decisão; o texto final depende do provedor.</p>
+    <details class="troca"><summary><span class="num">01</span><span>9. Z-API: título</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dd1"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>**Z-API (se mantida):**</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>**Provedor de WhatsApp:**</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">02</span><span>9. Z-API: campo da mensagem</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dd2"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>- **Confirmar no primeiro teste real** se o campo é `$json.message` ou `$json.body.message`.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>- (Preencher com o campo do texto no webhook do provedor escolhido. Na Z-API clássica era `$json.body.text.message`; no Omni, `message.contents[0].message`.)</code></pre></div></div></details>
+<details class="troca"><summary><span class="num">03</span><span>9. Z-API: webhooks</span></summary><div class="par"><label class="feito-doc"><input type="checkbox" id="dd3"> Aplicado</label><div class="cod"><span class="rot rot-loc">LOCALIZAR</span><button class="copiar" type="button">Copiar</button><pre><code>- Webhooks: &quot;Ao receber&quot; com a URL do N8n; ignorar presença, status, grupos, imagem, vídeo, áudio e documento; manter texto e chats privados; **&quot;Notificar enviadas por mim&quot; ligado** (necessário para a pausa automática); **enfileiramento ativo**. Alerta de queda de conexão obrigatório no MVP.</code></pre></div><div class="cod"><span class="rot rot-sub">SUBSTITUIR POR</span><button class="copiar" type="button">Copiar</button><pre><code>- (Preencher com a configuração de webhooks do provedor escolhido.) Regras que valem para qualquer provedor: receber as mensagens enviadas pelo próprio número (pausa automática); não descartar áudio e imagem no provedor, porque o bot responde que só lê texto (BT-16); grupos e status são descartados no N8n; alerta de queda obrigatório no MVP.</code></pre></div></div></details>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var CHAVE = 'pc-etapa5-v2';
+  var estado = {};
+  try { estado = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { estado = {}; }
+  function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch (e) {} }
+
+  // Abas (com #nome na URL)
+  var abas = Array.prototype.slice.call(document.querySelectorAll('nav.abas button'));
+  function mostrar(id, focar) {
+    abas.forEach(function (b) {
+      var on = b.getAttribute('aria-controls') === id;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      document.getElementById(b.getAttribute('aria-controls')).hidden = !on;
+      if (on && focar) b.focus();
+    });
+  }
+  abas.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('aria-controls');
+      mostrar(id);
+      try { history.replaceState(null, '', '#' + id); } catch (e) { location.hash = id; }
+    });
+  });
+  function pelaUrl() {
+    var h = (location.hash || '').slice(1);
+    if (h && document.getElementById(h) && document.getElementById(h).classList.contains('painel')) mostrar(h);
+  }
+  window.addEventListener('hashchange', pelaUrl);
+  pelaUrl();
+
+  // Checklists
+  var caixas = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+  function atualizar() {
+    var tarefas = caixas.filter(function (c) { return !c.closest('details'); });
+    var docs = caixas.filter(function (c) { return c.closest('#docs'); });
+    function barra(lista, idBarra, idTxt) {
+      var n = lista.filter(function (c) { return c.checked; }).length;
+      document.getElementById(idBarra).style.width = (lista.length ? 100 * n / lista.length : 0) + '%';
+      document.getElementById(idTxt).textContent = n + ' de ' + lista.length;
+    }
+    barra(tarefas, 'barra-geral', 'txt-geral');
+    barra(docs, 'barra-docs', 'txt-docs');
+    caixas.forEach(function (c) {
+      var alvo = c.closest('.passo, .teste');
+      if (alvo) alvo.classList.toggle('feito', c.checked);
+    });
+  }
+  caixas.forEach(function (c) {
+    if (estado[c.id]) c.checked = true;
+    c.addEventListener('change', function () { estado[c.id] = c.checked; salvar(); atualizar(); });
+  });
+  atualizar();
+  // Clicar no título de um passo ou teste marca a caixa
+  document.querySelectorAll('.passo .t, .teste .t').forEach(function (t) {
+    t.addEventListener('click', function () {
+      var c = t.closest('.passo, .teste').querySelector('input[type=checkbox]');
+      c.checked = !c.checked; c.dispatchEvent(new Event('change'));
+    });
+  });
+
+  // Copiar
+  var toast = document.getElementById('toast'), tm;
+  function avisar(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(tm); tm = setTimeout(function () { toast.classList.remove('on'); }, 1600); }
+  document.querySelectorAll('.copiar').forEach(function (b) {
+    b.addEventListener('click', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      var pre = b.parentElement.querySelector('pre');
+      var texto = pre.innerText;
+      function selecionar() {
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        avisar('Texto selecionado: use Ctrl+C');
+      }
+      try {
+        navigator.clipboard.writeText(texto).then(function () { avisar('Copiado'); }, selecionar);
+      } catch (e) { selecionar(); }
+    });
+  });
+})();
+</script>

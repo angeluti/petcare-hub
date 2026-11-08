@@ -1,0 +1,478 @@
+{
+  "name": "PetCare · Bot conversa",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "petcare-hub/zapi",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a712eba3-64ba-4300-83cb-cebd887dde80",
+      "name": "Z-API · Ao receber",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "6d3b67e2-06d5-44a6-ad3e-43811448c1c8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Payload \"Ao receber\" da Z-API (ReceivedCallback). O texto vem em body.text.message.\n// Grupos, canais, status, edições e reações são ignorados aqui (BT-16), mesmo\n// que a Z-API já filtre: defesa em profundidade.\nconst b = $json.body || {};\nconst fone = String(b.phone || '');\nconst digitos = fone.replace(/\\D/g, '');\nconst texto = (b.text && b.text.message) ?? (typeof b.message === 'string' ? b.message : null);\nlet tipo = 'ignorar', motivo = '';\nif (b.type && b.type !== 'ReceivedCallback') motivo = 'callback ' + b.type;\nelse if (b.isGroup || b.isNewsletter || b.broadcast || b.isStatusReply || fone.includes('-')) motivo = 'grupo, canal ou status';\nelse if (fone.includes('@') || digitos.length < 10 || digitos.length > 15) motivo = 'telefone fora do padrão: ' + fone;\nelse if (b.isEdit || b.reaction || b.waitingMessage) motivo = 'edição, reação ou mensagem pendente';\nelse if (b.fromMe) tipo = 'fromme';\nelse if (typeof texto === 'string' && texto.trim()) tipo = 'texto';\nelse if (b.audio || b.image || b.video || b.document || b.sticker || b.location || b.contact || b.ptv) tipo = 'midia';\nelse motivo = 'sem texto';\nreturn [{ json: {\n  evento: { canal: 'zapi', tipo, motivo, instance_id: b.instanceId || null, telefone: '+' + digitos, texto,\n            message_id: b.messageId || null, from_api: typeof b.fromApi === 'boolean' ? b.fromApi : null },\n  resultados: {}, passos: 0, execucao_id: $execution.id,\n} }];\n"
+      },
+      "id": "d6197af6-f938-46d9-8352-8c4f526c4058",
+      "name": "Normalizar evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "74514736-513c-40c8-af40-8ac92e87cd33",
+              "leftValue": "={{ $json.evento.tipo }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "ignorar"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "13da4d1a-8cce-4c3e-b6f8-fd990d00d522",
+      "name": "Ignorar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "91f79471-0db1-4e67-aa94-7ceb45bcca90",
+              "leftValue": "={{ $json.evento.tipo }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "fromme"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b7767262-8a61-4c13-823b-7155b525cfea",
+      "name": "fromMe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 8,
+        "unit": "seconds"
+      },
+      "id": "82a2290b-b23c-497f-b3d1-9dc953ea4252",
+      "name": "Esperar 8 s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "webhookId": "b848f49f-7e86-45c9-b716-ce1c5f80a312"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PetCare Hub · Motor de conversa do bot (etapa 5)\n// Cobre BT-01 a BT-06, BT-08 a BT-10, BT-12, BT-16 a BT-18, CM-01 e CM-03.\n//\n// Como funciona no N8n:\n//   Motor → (precisa de RPC?) → sub-workflow \"RPC Supabase\" → Motor → … → fim\n// O motor é uma função pura. Cada execução recomeça do topo e reaproveita os\n// resultados já guardados em ctx.resultados[chave]; quando falta um, ele pede\n// a RPC daquela chave e para. Por isso cada escrita no banco roda uma vez só.\n// Regra de negócio fica no banco: o motor só conversa e chama funções.\n//\n// Este arquivo é a fonte. O build (n8n/build.mjs) copia o conteúdo para o nó\n// \"Motor (passo)\" do workflow. Não edite o código dentro do N8n.\n// =====================================================================\n\nconst MAX_PASSOS = 30;\nconst RODAPE = '\\n_Digite 0 para voltar ao menu._';\nconst PORTES = [\n  { codigo: 'P', nome: 'Pequeno' },\n  { codigo: 'M', nome: 'Médio' },\n  { codigo: 'G', nome: 'Grande' },\n  { codigo: 'GG', nome: 'Gigante' },\n];\n\nclass PrecisaRpc {\n  constructor(chave, fn, args) { this.chave = chave; this.fn = fn; this.args = args; }\n}\nclass ErroRpc extends Error {\n  constructor(chave, fn, res) {\n    super(`RPC ${fn} falhou (HTTP ${res && res.status}): ${JSON.stringify(res && res.body).slice(0, 400)}`);\n    this.chave = chave; this.fn = fn; this.res = res;\n  }\n}\n\n// ---------------------------------------------------------------- utilitários\nconst norm = (s) => String(s || '')\n  .normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .toLowerCase().replace(/[.!?,;:]+$/g, '').replace(/\\s+/g, ' ').trim();\nconst num = (t) => (/^\\d{1,2}$/.test(t) ? parseInt(t, 10) : null);\nconst reais = (v) => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');\nconst primeiroNome = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\nconst rotuloDia = (d) => {\n  const [, m, dd] = String(d.dia).split('-');\n  return `${d.dia_semana} ${dd}/${m}`;\n};\nconst lista = (itens) => itens.map((x, i) => `*${i + 1}* · ${x}`).join('\\n');\nconst ehOkHttp = (r) => r && r.status >= 200 && r.status < 300;\n\nfunction simNao(t) {\n  if (/^(sim|s|si|ss|confirmo|confirmado|confirma|ok|pode|pode sim|vou sim|claro|👍)$/.test(t)) return 'sim';\n  if (/^(nao|n|nao vou|nao posso|cancela|cancelar|nao vou poder)$/.test(t)) return 'nao';\n  return null;\n}\nconst ehMenu = (t) => /^(0|menu|inicio|voltar|recomecar)$/.test(t);\nconst ehAtendente = (t) => /(atendente|humano|falar com (alguem|uma pessoa|a equipe|voce)|pessoa de verdade)/.test(t);\nfunction atalhoMenu(t) {\n  const n = num(t);\n  if (n >= 1 && n <= 4) return n;\n  if (/^(quero )?(agendar|marcar|agendamento)/.test(t) || /(quero|gostaria de) (agendar|marcar)/.test(t)) return 1;\n  if (/(meus agendamentos|consultar|ver agendamento|meu horario)/.test(t)) return 2;\n  if (/^(quero )?cancelar/.test(t) || /desmarcar/.test(t)) return 3;\n  return null;\n}\n\n// ------------------------------------------------------------------- entrada\nfunction passo(ctx) {\n  const resultados = ctx.resultados || {};\n  const passos = ctx.passos || 0;\n  const chamar = (chave, fn, args, opcoes) => {\n    if (!(chave in resultados)) throw new PrecisaRpc(chave, fn, args);\n    const r = resultados[chave];\n    if (opcoes && opcoes.aceitarErro) return r;\n    if (!ehOkHttp(r)) throw new ErroRpc(chave, fn, r);\n    return r.body === '' || r.body === undefined ? null : r.body;\n  };\n  const pedir = (e) => {\n    if (passos >= MAX_PASSOS) throw new Error(`Motor passou de ${MAX_PASSOS} RPCs numa mensagem`);\n    return { ...ctx, proximo: { tipo: 'rpc', chave: e.chave, fn: e.fn, args: e.args } };\n  };\n\n  try {\n    return { ...ctx, proximo: { tipo: 'fim', ...conversar(ctx, chamar) } };\n  } catch (e) {\n    if (e instanceof PrecisaRpc) return pedir(e);\n    if (!(e instanceof ErroRpc)) throw e;\n    // Falha numa RPC: registra (PL-04), responde com educação e mantém o estado.\n    try {\n      return { ...ctx, proximo: { tipo: 'fim', erro: e.message, ...falha(ctx, chamar, e) } };\n    } catch (e2) {\n      if (e2 instanceof PrecisaRpc) return pedir(e2);\n      throw new Error(`${e.message} | e ao tratar a falha: ${e2.message}`);\n    }\n  }\n}\n\nfunction falha(ctx, rpc, err) {\n  const r = (ctx.resultados || {}).petshop;\n  const petshop = r && ehOkHttp(r) ? r.body : null;\n  rpc('falha_registro', 'bot_registrar_erro', {\n    p_workflow: 'PetCare · Bot conversa', p_no: `Motor · ${err.fn}`, p_mensagem: err.message,\n    p_execucao: ctx.execucao_id || null, p_url: null, p_petshop: petshop,\n  });\n  if (!petshop || ctx.evento.tipo === 'fromme') return { envios: [] };\n  const env = rpc('falha_envio', 'bot_envio', { p_petshop: petshop });\n  return {\n    envios: montarEnvios(petshop, env, [{\n      para: ctx.evento.telefone,\n      texto: 'Desculpe, tive um problema aqui. 😕 Tente de novo em instantes ou digite *4* para falar com a equipe.',\n      tipo: 'conversa', agendamento_id: null,\n    }]),\n  };\n}\n\nfunction montarEnvios(petshop, env, msgs) {\n  const canal = env && env.canal;\n  if (canal === 'teste') {\n    // Canal de teste: nada sai para o WhatsApp; o workflow devolve o texto no chat.\n    return msgs.map((m) => ({ ...m, petshop_id: petshop, canal, phone: String(m.para).replace(/\\D/g, '') }));\n  }\n  if (canal !== 'zapi' || !env.zapi_instance_id || !env.token) {\n    throw new Error(`Pet shop sem canal configurado (canal ${canal || 'vazio'}, instância ou token no Vault)`);\n  }\n  return msgs.map((m) => ({\n    ...m, petshop_id: petshop, canal, instancia: env.zapi_instance_id, token: env.token,\n    phone: String(m.para).replace(/\\D/g, ''),\n  }));\n}\n\n// Texto do lembrete de 24 h (CM-02). O workflow de lembretes usa o mesmo texto.\nfunction textoLembrete(l) {\n  const nome = String(l.nome_tutor || '').split(' ')[0];\n  return `Oi${nome ? ', ' + nome : ''}! Aqui é ${l.nome_bot || 'a assistente'} 🐾\\n`\n    + `Lembrete: amanhã (${l.data}) às ${l.hora} tem ${l.servicos || 'atendimento'} para ${l.pet}.\\n\\n`\n    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.';\n}\n\n// Comandos do canal de teste (#estado, #devolver, #lembrete). #dono vira evento fromme.\nfunction comandoTeste(ctx, rpc, petshop) {\n  const ev = ctx.evento;\n  const e = rpc('entrada', 'bot_entrada', { p_petshop: petshop, p_telefone: ev.telefone });\n  if (ev.comando === 'estado') {\n    const dados = Object.keys(e.dados_temp || {});\n    return { envios: [], nota: `Estado: ${e.estado}${dados.length ? ' · dados_temp: ' + dados.join(', ') : ''} · conhecido aqui: ${e.conhecido_aqui ? 'sim' : 'não'} · bot ligado: ${e.bot && e.bot.ativo ? 'sim' : 'não'}` };\n  }\n  if (ev.comando === 'devolver') {\n    if (e.estado !== 'humano') return { envios: [], nota: `A conversa não está pausada (estado ${e.estado}).` };\n    rpc('devolver', 'bot_devolver', { p_conversa: e.conversa_id });\n    return { envios: [], nota: 'Conversa devolvida ao bot.' };\n  }\n  if (ev.comando === 'lembrete') {\n    const pend = (rpc('pend', 'lembretes_pendentes', { p_petshop: petshop }) || []).filter((l) => l.telefone === ev.telefone);\n    if (!pend.length) {\n      return { envios: [], nota: 'Nenhum lembrete pendente para este telefone. Precisa de um agendamento confirmado para amanhã, fora de período bloqueado, e o bot ligado.' };\n    }\n    const l = pend[0];\n    const marcado = rpc('marcar', 'bot_lembrete_marcar', { p_agendamento: l.agendamento_id });\n    if (marcado !== true) return { envios: [], nota: 'Esse lembrete já tinha sido enviado.' };\n    const env = rpc('envio', 'bot_envio', { p_petshop: petshop });\n    return { envios: montarEnvios(petshop, env, [{ para: ev.telefone, texto: textoLembrete(l), tipo: 'lembrete', agendamento_id: l.agendamento_id }]) };\n  }\n  return { envios: [], nota: `Comando desconhecido: ${ev.comando}` };\n}\n\nfunction conversar(ctx, rpc) {\n  const ev = ctx.evento;\n  const teste = ev.canal === 'teste';\n  const petshop = teste\n    ? rpc('petshop', 'bot_petshop_teste', { p_slug: ev.instance_id })\n    : rpc('petshop', 'bot_petshop_por_instancia', { p_zapi_instance: ev.instance_id, p_meta_phone_id: null });\n  if (!petshop) {\n    return { envios: [], nota: teste\n      ? `O pet shop \"${ev.instance_id}\" não está no canal de teste (bot_config.canal precisa ser 'teste').`\n      : `instância desconhecida: ${ev.instance_id}` };\n  }\n  if (teste && ev.tipo === 'comando') return comandoTeste(ctx, rpc, petshop);\n\n  if (ev.tipo === 'fromme') {\n    const r = rpc('fromme', 'bot_registrar_fromme', {\n      p_petshop: petshop, p_telefone: ev.telefone, p_message_id: ev.message_id || null, p_from_api: ev.from_api,\n    });\n    return { envios: [], nota: `fromMe: ${r}` };\n  }\n\n  rpc('log_entrada', 'bot_registrar_mensagem', {\n    p_petshop: petshop, p_telefone: ev.telefone, p_direcao: 'entrada', p_tipo: 'conversa',\n    p_status: 'recebida', p_agendamento: null, p_id_externo: ev.message_id || null, p_erro: null,\n  });\n  const e = rpc('entrada', 'bot_entrada', { p_petshop: petshop, p_telefone: ev.telefone });\n  if (!e.bot || !e.bot.ativo) return { envios: [], nota: 'bot desligado neste pet shop' };\n  if (e.estado === 'humano' || e.estado === 'bloqueado') return { envios: [], nota: `silêncio (${e.estado})` };\n\n  const c = new Conversa(petshop, ev, e, rpc);\n  c.processar();\n  return c.finalizar();\n}\n\n// ------------------------------------------------------------------ conversa\nclass Conversa {\n  constructor(petshop, ev, e, rpc) {\n    this.petshop = petshop; this.ev = ev; this.e = e; this.rpc = rpc;\n    this.estado = e.estado;\n    this.dados = e.dados_temp || {};\n    this.novoEstado = 'idle';\n    this.salvar = true;\n    this.respostas = [];\n    this.avisos = [];\n    this.tipo = 'conversa';\n    this.agendamentoId = null;\n  }\n\n  // --- acesso ao banco\n  info() {\n    const i = this.rpc('info', 'bot_petshop_info', { p_petshop: this.petshop }) || {};\n    const bot = this.e.bot || {};\n    const nome = i.nome || (i.petshop && i.petshop.nome) || '';\n    const nomeBot = i.nome_bot || (i.bot && i.bot.nome) || bot.nome || '';\n    let saud = i.saudacao || (i.bot && i.bot.saudacao) || bot.saudacao || 'Oi! Como posso ajudar?';\n    saud = saud.replace(/\\{bot\\}/g, nomeBot).replace(/\\{petshop\\}/g, nome);\n    return { nome, saudacao: saud, endereco: i.endereco || null, telefone: i.telefone_contato || null };\n  }\n  aberto() { return this.rpc('aberto', 'bot_aberto_agora', { p_petshop: this.petshop }) || { aberto: true }; }\n  tutorId() { return this.dados.tutor_id || this.e.tutor_id; }\n\n  dizer(t) { this.respostas.push(t); }\n  avisarDono(t) { this.avisos.push(t); }\n\n  // --- roteamento\n  processar() {\n    const ev = this.ev;\n    if (ev.tipo === 'midia') {   // BT-16\n      this.dizer('Por aqui eu só consigo ler mensagens de texto. 🙂 Responda com o número da opção ou digite *menu*.\\nSe precisar mandar um áudio ou foto, digite *4* que a equipe atende você.');\n      this.salvar = false;\n      return;\n    }\n    const t = norm(ev.texto);\n    const est = this.estado;\n\n    if (['novo', 'idle', 'menu'].includes(est)) {\n      const sn = simNao(t);\n      if (sn) {\n        const r = this.rpc('lembrete', 'bot_responder_lembrete', { p_petshop: this.petshop, p_telefone: ev.telefone, p_resposta: sn });\n        if (r && r.encontrado) return this.respostaLembrete(r);\n      }\n    }\n    if (ehAtendente(t)) return this.transbordo();\n    if (ehMenu(t) && est !== 'novo') return this.menu();\n\n    switch (est) {\n      case 'novo': { const a = atalhoMenu(t); return a ? this.escolhaMenu(a) : this.boasVindas(); }\n      case 'idle': { const a = atalhoMenu(t); return a ? this.escolhaMenu(a) : this.saudacaoConhecido(); }\n      case 'menu': return this.escolhaMenu(atalhoMenu(t));\n      case 'aguardando_nome': return this.recebeNomeTutor();\n      case 'aguardando_pet': return this.recebePet(t);\n      case 'aguardando_nome_pet': return this.recebeNomePet();\n      case 'aguardando_porte': return this.recebePorte(t);\n      case 'aguardando_servico': return this.recebeServico(t);\n      case 'aguardando_data': return this.recebeData(t);\n      case 'aguardando_hora': return this.recebeHora(t);\n      case 'aguardando_confirmacao': return this.recebeConfirmacao(t);\n      case 'aguardando_cancelamento': return this.recebeCancelamento(t);\n      default: return this.menu();\n    }\n  }\n\n  // --- menu e saudação (BT-01, BT-02, BT-12)\n  textoMenu() {\n    return 'Como posso ajudar? Responda com o número:\\n'\n      + lista(['Agendar um horário', 'Ver meus agendamentos', 'Cancelar um agendamento', 'Falar com a equipe']);\n  }\n  linhaFechado() {\n    const a = this.aberto();\n    if (a.aberto || !a.proxima_abertura) return '';\n    return `⏰ A loja está fechada agora e abre ${a.proxima_abertura}. Pelo WhatsApp eu agendo a qualquer hora.\\n\\n`;\n  }\n  boasVindas() {\n    this.dizer(`${this.info().saudacao}\\n\\n${this.linhaFechado()}${this.textoMenu()}`);\n    this.novoEstado = 'menu'; this.dados = {};\n  }\n  saudacaoConhecido() {\n    const nome = primeiroNome(this.e.nome_tutor);\n    this.dizer(`Oi${nome ? ', ' + nome : ''}! 🐾\\n\\n${this.linhaFechado()}${this.textoMenu()}`);\n    this.novoEstado = 'menu'; this.dados = {};\n  }\n  menu(prefixo) {\n    this.dizer((prefixo || '') + this.textoMenu());\n    this.novoEstado = 'menu'; this.dados = {};\n  }\n  escolhaMenu(n) {\n    if (n === 1) return this.iniciarAgendamento();\n    if (n === 2) return this.consultar();\n    if (n === 3) return this.iniciarCancelamento();\n    if (n === 4) return this.transbordo();\n    return this.menu('Não entendi. 🙂 ');\n  }\n\n  // --- agendar: pet (BT-03, BT-04, BT-17)\n  iniciarAgendamento() {\n    const aqui = (this.e.pets || []).map((p) => ({ id: p.id, nome: p.nome, porte: p.porte, origem: 'aqui' }));\n    const comp = (this.e.pets_compartilhaveis || []).map((p) => ({ id: p.id, nome: p.nome, porte: p.porte, origem: 'comp' }));\n    const opcoes = [...aqui, ...comp];\n    if (!opcoes.length) {\n      this.dados = {};\n      return this.e.conhecido_aqui ? this.pedirNomePet() : this.pedirNomeTutor();\n    }\n    this.dados = { opcoes_pet: opcoes };\n    this.perguntarPet();\n  }\n  perguntarPet(prefixo) {\n    const ops = this.dados.opcoes_pet;\n    // BT-17: pets de outro pet shop aparecem iguais aos daqui, sem citar a origem.\n    this.dizer(`${prefixo || ''}Para qual pet é o horário?\\n${lista(ops.map((p) => p.nome))}\\n*${ops.length + 1}* · Outro pet${RODAPE}`);\n    this.novoEstado = 'aguardando_pet';\n  }\n  recebePet(t) {\n    const ops = this.dados.opcoes_pet || [];\n    const n = num(t);\n    if (n && n <= ops.length) {\n      const p = ops[n - 1];\n      if (p.origem === 'comp') {\n        this.rpc('vincular', 'bot_vincular_pet_compartilhado', { p_petshop: this.petshop, p_tutor: this.e.tutor_id, p_pet: p.id });\n      }\n      this.dados = { pet: { id: p.id, nome: p.nome, porte: p.porte } };\n      return this.oferecerServicos();\n    }\n    if (n === ops.length + 1) {\n      this.dados = {};\n      return this.e.conhecido_aqui ? this.pedirNomePet() : this.pedirNomeTutor();\n    }\n    this.perguntarPet('Não entendi. 🙂 ');\n  }\n  pedirNomeTutor() {\n    this.dizer('Que bom ter você aqui! 😊 Para começar, qual é o seu nome?');\n    this.novoEstado = 'aguardando_nome';\n  }\n  recebeNomeTutor() {\n    const nome = String(this.ev.texto || '').trim().replace(/\\s+/g, ' ');\n    if (nome.length < 2 || nome.length > 60 || /^\\d+$/.test(nome)) {\n      this.dizer('Pode me dizer o seu nome? (só o nome, por favor)');\n      this.novoEstado = 'aguardando_nome';\n      return;\n    }\n    const tutor = this.rpc('cad_tutor', 'bot_cadastrar_tutor', { p_petshop: this.petshop, p_telefone: this.ev.telefone, p_nome: nome });\n    this.dados = { tutor_id: tutor };\n    this.pedirNomePet(`Prazer, ${primeiroNome(nome)}! `);\n  }\n  pedirNomePet(prefixo) {\n    this.dizer(`${prefixo || ''}Qual é o nome do seu pet?`);\n    this.novoEstado = 'aguardando_nome_pet';\n  }\n  recebeNomePet() {\n    const nome = String(this.ev.texto || '').trim().replace(/\\s+/g, ' ');\n    if (nome.length < 1 || nome.length > 40 || /^\\d+$/.test(nome)) {\n      this.dizer('Qual é o nome do seu pet?');\n      this.novoEstado = 'aguardando_nome_pet';\n      return;\n    }\n    this.dados = { ...this.dados, pet_nome: nome };\n    this.perguntarPorte();\n  }\n  perguntarPorte(prefixo) {\n    this.dizer(`${prefixo || ''}Qual é o porte de ${this.dados.pet_nome}?\\n${lista(PORTES.map((p) => p.nome))}\\n_Na dúvida, escolha o mais próximo: a equipe confere no atendimento._`);\n    this.novoEstado = 'aguardando_porte';\n  }\n  recebePorte(t) {\n    const n = num(t);\n    const porPalavra = { pequeno: 'P', p: 'P', medio: 'M', m: 'M', grande: 'G', g: 'G', gigante: 'GG', gg: 'GG' };\n    const porte = n && n <= 4 ? PORTES[n - 1].codigo : porPalavra[t];\n    if (!porte) return this.perguntarPorte('Não entendi. 🙂 ');\n    const pet = this.rpc('cad_pet', 'cadastrar_pet', {\n      p_petshop: this.petshop, p_tutor: this.tutorId(), p_nome: this.dados.pet_nome, p_porte: porte,\n      p_especie: 'cao', p_raca: null, p_nascimento: null,\n    });\n    this.dados = { tutor_id: this.dados.tutor_id, pet: { id: pet, nome: this.dados.pet_nome, porte } };\n    this.oferecerServicos();\n  }\n\n  // --- agendar: serviço, dia, hora, confirmação\n  oferecerServicos(prefixo) {\n    const pet = this.dados.pet;\n    const servs = this.rpc('servicos', 'bot_servicos', { p_petshop: this.petshop, p_porte: pet.porte }) || [];\n    if (!servs.length) {\n      return this.menu('No momento não consigo agendar pelo WhatsApp para esse porte. Digite *4* para falar com a equipe.\\n\\n');\n    }\n    this.dados = { ...this.dados, opcoes_servico: servs.map((s) => ({ id: s.id, nome: s.nome, preco: s.preco })) };\n    this.dizer(`${prefixo || ''}Qual serviço para ${pet.nome}?\\n${lista(servs.map((s) => `${s.nome} — ${reais(s.preco)}`))}${RODAPE}`);\n    this.novoEstado = 'aguardando_servico';\n  }\n  recebeServico(t) {\n    const ops = this.dados.opcoes_servico || [];\n    const n = num(t);\n    if (!n || n > ops.length) return this.oferecerServicos('Não entendi. 🙂 ');\n    const { opcoes_servico, ...resto } = this.dados;\n    this.dados = { ...resto, servico: ops[n - 1] };\n    this.oferecerDias('dias');\n  }\n  oferecerDias(chave, prefixo) {\n    const d = this.dados;\n    const dias = (this.rpc(chave, 'proximos_dias_com_vaga', {\n      p_petshop: this.petshop, p_servicos: [d.servico.id], p_porte: d.pet.porte, p_dias: 7,\n    }) || []).filter((x) => Number(x.horarios) > 0);\n    if (!dias.length) {\n      return this.menu(`${prefixo || ''}Não encontrei vaga para ${d.servico.nome} nos próximos 7 dias. 😕 Digite *4* para falar com a equipe.\\n\\n`);\n    }\n    const opcoes = dias.map((x) => ({ dia: x.dia, rotulo: rotuloDia(x) }));\n    const { opcoes_dia, opcoes_hora, dia, hora, ...resto } = d;\n    this.dados = { ...resto, opcoes_dia: opcoes };\n    this.dizer(`${prefixo || ''}Qual dia fica melhor?\\n${lista(dias.map((x, i) => `${opcoes[i].rotulo} (${x.horarios} ${Number(x.horarios) === 1 ? 'horário' : 'horários'})`))}${RODAPE}`);\n    this.novoEstado = 'aguardando_data';\n  }\n  recebeData(t) {\n    const ops = this.dados.opcoes_dia || [];\n    const n = num(t);\n    if (!n || n > ops.length) {\n      this.dizer(`Não entendi. 🙂 Responda com o número do dia:\\n${lista(ops.map((o) => o.rotulo))}${RODAPE}`);\n      this.novoEstado = 'aguardando_data';\n      return;\n    }\n    const { opcoes_dia, ...resto } = this.dados;\n    this.dados = { ...resto, dia: ops[n - 1] };\n    this.oferecerHoras('horas');\n  }\n  oferecerHoras(chave, prefixo) {\n    const d = this.dados;\n    const horas = this.rpc(chave, 'horarios_livres_resumo', {\n      p_petshop: this.petshop, p_servicos: [d.servico.id], p_porte: d.pet.porte, p_data: d.dia.dia,\n    }) || [];\n    if (!horas.length) return this.oferecerDias(chave + '_dias', `${prefixo || ''}O dia ${d.dia.rotulo} acabou de lotar. 😕 `);\n    const opcoes = horas.slice(0, 24).map((h) => ({ inicio: h.inicio, hora: h.hora }));\n    const { opcoes_hora, hora, ...resto } = d;\n    this.dados = { ...resto, opcoes_hora: opcoes };\n    const linhas = [];\n    for (let i = 0; i < opcoes.length; i += 3) {\n      linhas.push(opcoes.slice(i, i + 3).map((o, j) => `*${i + j + 1}* ${o.hora}`).join('    '));\n    }\n    this.dizer(`${prefixo || ''}Horários livres em ${d.dia.rotulo}:\\n${linhas.join('\\n')}${RODAPE}`);\n    this.novoEstado = 'aguardando_hora';\n  }\n  recebeHora(t) {\n    const ops = this.dados.opcoes_hora || [];\n    const n = num(t);\n    if (!n || n > ops.length) return this.oferecerHoras('horas', 'Não entendi. 🙂 ');\n    const { opcoes_hora, ...resto } = this.dados;\n    this.dados = { ...resto, hora: ops[n - 1] };\n    this.resumo();\n  }\n  resumo(prefixo) {\n    const d = this.dados;\n    this.dizer(`${prefixo || ''}Confere se está tudo certo:\\n🐾 *${d.pet.nome}*\\n✂️ ${d.servico.nome}\\n📅 ${d.dia.rotulo} às ${d.hora.hora}\\n💰 ${reais(d.servico.preco)}\\n\\n`\n      + lista(['Confirmar', 'Escolher outro horário', 'Desistir']));\n    this.novoEstado = 'aguardando_confirmacao';\n  }\n  recebeConfirmacao(t) {\n    const n = num(t) || (simNao(t) === 'sim' ? 1 : null);\n    const d = this.dados;\n    if (n === 1) {\n      const r = this.rpc('reserva', 'reservar_agendamento', {\n        p_petshop: this.petshop, p_pet: d.pet.id, p_tutor: this.tutorId(), p_servicos: [d.servico.id],\n        p_inicio: d.hora.inicio, p_recurso: null, p_origem: 'bot', p_observacoes: null, p_encaixe: false, p_status: 'confirmado',\n      }, { aceitarErro: true });\n      if (ehOkHttp(r)) {\n        const ag = r.body || {};\n        const info = this.info();\n        this.tipo = 'confirmacao';   // CM-01\n        this.agendamentoId = ag.id || null;\n        this.dizer(`Agendado! ✅\\n🐾 ${d.pet.nome} · ${d.servico.nome}\\n📅 ${d.dia.rotulo} às ${d.hora.hora}`\n          + (info.endereco ? `\\n📍 ${info.endereco}` : '')\n          + '\\n\\nNa véspera eu mando um lembrete. Para ver ou cancelar, é só digitar *menu*.');\n        this.novoEstado = 'idle'; this.dados = {};\n        return;\n      }\n      // Conflito: decide pelo code, nunca pelo status HTTP (PostgREST manda 400).\n      if (r && r.body && r.body.code === '23P01') {\n        return this.oferecerHoras('horas_conflito', 'Esse horário acabou de ser reservado. 😕 ');\n      }\n      throw new ErroRpc('reserva', 'reservar_agendamento', r);\n    }\n    if (n === 2) return this.oferecerHoras('horas_de_novo');\n    if (n === 3) {\n      this.dizer('Tudo bem, não agendei nada. Quando quiser, é só digitar *menu*.');\n      this.novoEstado = 'idle'; this.dados = {};\n      return;\n    }\n    this.resumo('Não entendi. 🙂 ');\n  }\n\n  // --- consultar e cancelar (BT-05, BT-06)\n  agendamentos(chave) {\n    if (!this.e.tutor_id || !this.e.conhecido_aqui) return [];\n    return this.rpc(chave, 'bot_agendamentos_tutor', { p_petshop: this.petshop, p_tutor: this.e.tutor_id }) || [];\n  }\n  consultar() {\n    const ags = this.agendamentos('ags');\n    if (!ags.length) {\n      this.dizer('Você não tem agendamentos futuros por aqui. Para marcar, digite *1*.');\n    } else {\n      this.dizer('Seus próximos agendamentos:\\n'\n        + ags.map((a) => `• ${a.data} às ${a.hora} — ${a.pet} (${a.servicos})`).join('\\n')\n        + '\\n\\nPara cancelar, digite *3*. Para o menu, *0*.');\n    }\n    this.novoEstado = 'idle'; this.dados = {};\n  }\n  iniciarCancelamento(prefixo) {\n    const ags = this.agendamentos('ags');\n    const podem = ags.filter((a) => a.pode_cancelar);\n    this.novoEstado = 'idle'; this.dados = {};\n    if (!ags.length) return this.dizer('Você não tem agendamentos futuros por aqui.');\n    if (!podem.length) {\n      return this.dizer('O prazo para cancelar pelo WhatsApp já passou para os seus próximos horários. Digite *4* para falar com a equipe.');\n    }\n    this.dados = { opcoes_cancel: podem.map((a) => ({ id: a.id, rotulo: `${a.data} às ${a.hora} — ${a.pet} (${a.servicos})` })) };\n    this.dizer(`${prefixo || ''}Qual agendamento você quer cancelar?\\n${lista(this.dados.opcoes_cancel.map((o) => o.rotulo))}${RODAPE}`);\n    this.novoEstado = 'aguardando_cancelamento';\n  }\n  recebeCancelamento(t) {\n    const ops = this.dados.opcoes_cancel || [];\n    const n = num(t);\n    if (!n || n > ops.length) return this.iniciarCancelamento('Não entendi. 🙂 ');\n    const op = ops[n - 1];\n    const ok = this.rpc('cancelar', 'bot_cancelar', { p_petshop: this.petshop, p_tutor: this.e.tutor_id, p_agendamento: op.id });\n    this.novoEstado = 'idle'; this.dados = {};\n    if (ok === true) {\n      this.tipo = 'cancelamento'; this.agendamentoId = op.id;\n      this.dizer(`Cancelado. ✅ ${op.rotulo}\\nSe quiser marcar outro dia, é só digitar *1*.`);\n      this.avisarDono(`❌ Cancelamento pelo WhatsApp\\n${this.e.nome_tutor || this.ev.telefone} cancelou: ${op.rotulo}.`);   // CM-03\n    } else {\n      this.dizer('Não consegui cancelar: o prazo pelo WhatsApp já passou ou o horário mudou. Digite *4* para falar com a equipe.');\n    }\n  }\n\n  // --- lembrete (CM-02 resposta, CM-03)\n  respostaLembrete(r) {\n    this.agendamentoId = r.agendamento_id; this.novoEstado = 'idle'; this.dados = {};\n    if (r.acao === 'confirmado') {\n      this.dizer(`Obrigado! Confirmado para ${r.data} às ${r.hora}. Até lá! 🐾`);\n    } else {\n      this.tipo = 'cancelamento';\n      this.dizer(`Tudo bem, cancelei o horário de ${r.pet} em ${r.data} às ${r.hora}. Se quiser marcar outro dia, é só digitar *1*.`);\n      this.avisarDono(`❌ Cancelamento pelo lembrete\\n${r.nome_tutor || this.ev.telefone} cancelou ${r.pet}, ${r.data} às ${r.hora}. O horário ficou livre na agenda.`);\n    }\n  }\n\n  // --- transbordo (BT-08, BT-12)\n  transbordo() {\n    const a = this.aberto();\n    this.rpc('pausa', 'bot_pausar_por_humano', { p_petshop: this.petshop, p_telefone: this.ev.telefone });\n    this.salvar = false;   // a pausa já gravou o estado 'humano'\n    this.tipo = 'transbordo';\n    this.dizer(a.aberto || !a.proxima_abertura\n      ? 'Certo! Chamei a equipe e alguém responde por aqui em breve. 🙋'\n      : `Certo! Avisei a equipe. A loja está fechada agora e abre ${a.proxima_abertura}; respondemos por aqui assim que possível. 🙋`);\n    this.avisarDono(`🙋 ${this.e.nome_tutor || 'Um cliente'} (${this.ev.telefone}) pediu para falar com a equipe no WhatsApp. O bot fica em silêncio nessa conversa até você responder ou por algumas horas.`);\n  }\n\n  // --- fechamento: grava estado e monta os envios\n  finalizar() {\n    if (this.salvar) {\n      this.rpc('salvar', 'bot_salvar_estado', {\n        p_conversa: this.e.conversa_id, p_estado: this.novoEstado,\n        p_dados_temp: this.novoEstado === 'idle' ? {} : this.dados,\n      });\n    }\n    if (!this.respostas.length && !this.avisos.length) return { envios: [] };\n    const env = this.rpc('envio', 'bot_envio', { p_petshop: this.petshop });\n    const msgs = [];\n    if (this.respostas.length) {\n      msgs.push({ para: this.ev.telefone, texto: this.respostas.join('\\n\\n'), tipo: this.tipo, agendamento_id: this.agendamentoId });\n    }\n    if (this.avisos.length && env && env.telefone_avisos && env.telefone_avisos !== this.ev.telefone) {\n      msgs.push({ para: env.telefone_avisos, texto: this.avisos.join('\\n\\n'), tipo: 'alerta_dono', agendamento_id: this.agendamentoId });\n    }\n    return { envios: montarEnvios(this.petshop, env, msgs), estado: this.salvar ? this.novoEstado : 'humano' };\n  }\n}\n\n// Exporta para testes em Node; no N8n o build acrescenta a chamada ao final.\n\n// ---- N8n: um passo do motor por vez (o laço passa pelo sub-workflow de RPC)\nreturn [{ json: passo($input.first().json) }];\n"
+      },
+      "id": "e40374e7-d268-44fc-92c2-044e3851aa6e",
+      "name": "Motor (passo)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d36b02d7-8b4a-4c59-af35-d456daace7fc",
+              "leftValue": "={{ $json.proximo.tipo }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "rpc"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "666a95a6-aeb4-4175-a32a-7908959f2a5b",
+      "name": "Precisa de RPC?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "PetCare · RPC Supabase"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "62bbaacd-7bc5-4ebb-baa9-df3e5365f15b",
+      "name": "RPC Supabase",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f6f98338-76a9-4286-882e-212ad00817d4",
+              "leftValue": "={{ (($json.proximo || {}).envios || []).length }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "3139aa18-14ce-4822-87f7-7a071d2882b0",
+      "name": "Tem envios?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Uma mensagem por destinatário: tutor e, se houver, o celular de avisos do dono.\nreturn $json.proximo.envios.map((e) => ({ json: { envio: e } }));\n"
+      },
+      "id": "d6c6ed55-a16b-4ee8-bf1c-78494e2a1abd",
+      "name": "Separar envios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.z-api.io/instances/{{ $json.envio.instancia }}/token/{{ $json.envio.token }}/send-text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $json.envio.phone, message: $json.envio.texto }) }}"
+      },
+      "id": "109ce8eb-2ea3-423f-9567-d3266173409b",
+      "name": "Z-API · send-text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "TROCAR",
+          "name": "Z-API · Client-Token"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Depois do envio: registra em mensagens_log (CM-11) com o id da Z-API.\n// O id é o que faz o fromMe do próprio bot ser reconhecido e ignorado.\nconst envios = $('Separar envios').all();\nreturn $input.all().map((r, i) => {\n  const e = envios[i].json.envio;\n  const j = r.json || {};\n  const ok = j.statusCode >= 200 && j.statusCode < 300;\n  const idExterno = ok && j.body ? (j.body.messageId || j.body.id || j.body.zaapId || null) : null;\n  return { json: {\n    envio: { ...e, token: undefined },\n    falhou: !ok,\n    resultados: {},\n    proximo: { chave: 'log', fn: 'bot_registrar_mensagem', args: {\n      p_petshop: e.petshop_id, p_telefone: e.para, p_direcao: 'saida', p_tipo: e.tipo,\n      p_status: ok ? 'enviada' : 'falha', p_agendamento: e.agendamento_id || null,\n      p_id_externo: idExterno, p_erro: ok ? null : JSON.stringify(j.body || j.error || j).slice(0, 500) } },\n  } };\n});\n"
+      },
+      "id": "0e95ff97-d884-4dc8-84c8-db0ea6318cc0",
+      "name": "Preparar log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "PetCare · RPC Supabase"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "b918ae76-61a8-4710-b6fe-560948708d80",
+      "name": "RPC · registrar envio",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Bot conversa (Z-API)\n1. Webhook recebe tudo da Z-API.\n2. **fromMe** espera 8 s (dá tempo de o envio do bot gravar o id) e chama `bot_registrar_fromme`: eco do bot é ignorado; mensagem do dono pausa o bot (BT-18).\n3. **Motor (passo)** pede uma RPC por vez até terminar. Código-fonte: `n8n/src/motor-conversa.js` (não edite aqui).\n4. Envia pela Z-API e registra em `mensagens_log`.",
+        "height": 260,
+        "width": 620
+      },
+      "id": "f066467f-0bd1-468d-8aed-0592c8544755",
+      "name": "Nota 2a66",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -340
+      ]
+    }
+  ],
+  "connections": {
+    "Z-API · Ao receber": {
+      "main": [
+        [
+          {
+            "node": "Normalizar evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar evento": {
+      "main": [
+        [
+          {
+            "node": "Ignorar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ignorar?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "fromMe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fromMe?": {
+      "main": [
+        [
+          {
+            "node": "Esperar 8 s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Motor (passo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 8 s": {
+      "main": [
+        [
+          {
+            "node": "Motor (passo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Motor (passo)": {
+      "main": [
+        [
+          {
+            "node": "Precisa de RPC?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa de RPC?": {
+      "main": [
+        [
+          {
+            "node": "RPC Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tem envios?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC Supabase": {
+      "main": [
+        [
+          {
+            "node": "Motor (passo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem envios?": {
+      "main": [
+        [
+          {
+            "node": "Separar envios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar envios": {
+      "main": [
+        [
+          {
+            "node": "Z-API · send-text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Z-API · send-text": {
+      "main": [
+        [
+          {
+            "node": "Preparar log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar log": {
+      "main": [
+        [
+          {
+            "node": "RPC · registrar envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

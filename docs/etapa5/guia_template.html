@@ -1,0 +1,481 @@
+<title>Bot PetCare no N8n</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: guia de execução em abas; coluna de leitura de 820px, código em blocos largos com cópia.
+   Tokens do packages/brand/tokens.css do PetCare Hub (azul, tinta, espuma, toalha). */
+:root {
+  --azul: #1f5fd6;
+  --azul-claro: #e4ecfb;
+  --tinta: #10213a;
+  --tinta-suave: #4d5d75;
+  --espuma: #f3f7f8;
+  --papel: #ffffff;
+  --linha: #d9e2ea;
+  --toalha: #f2b83a;
+  --toalha-claro: #fdf2d8;
+  --ok: #1d7a4f;
+  --ok-claro: #e2f3ea;
+  --codigo-fundo: #10213a;
+  --codigo-texto: #dfe8f7;
+  --f-titulo: "Young Serif", Georgia, "Times New Roman", serif;
+  --f-texto: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --azul: #7ea6ff; --azul-claro: #1b2b4a; --tinta: #e6edf6; --tinta-suave: #9fb0c8;
+    --espuma: #0c1626; --papel: #13223a; --linha: #263852; --toalha: #f2b83a; --toalha-claro: #33280f;
+    --ok: #63d39b; --ok-claro: #12301f; --codigo-fundo: #070f1c; --codigo-texto: #d3def2; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --azul: #7ea6ff; --azul-claro: #1b2b4a; --tinta: #e6edf6; --tinta-suave: #9fb0c8;
+  --espuma: #0c1626; --papel: #13223a; --linha: #263852; --toalha: #f2b83a; --toalha-claro: #33280f;
+  --ok: #63d39b; --ok-claro: #12301f; --codigo-fundo: #070f1c; --codigo-texto: #d3def2; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--espuma); color: var(--tinta); font-family: var(--f-texto); font-size: 16px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--espuma); }
+.wrap { max-width: 980px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 72px; }
+header.topo { display: grid; gap: 8px; }
+.sobre { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-suave); }
+.sobre b { color: var(--azul); font-weight: 500; }
+h1 { font-family: var(--f-titulo); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 span { color: var(--azul); }
+.lede { margin: 0; max-width: 66ch; color: var(--tinta-suave); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip { font-family: var(--f-mono); font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--linha); background: var(--papel); color: var(--tinta-suave); }
+.chip.ok { background: var(--ok-claro); color: var(--ok); border-color: transparent; }
+.chip.pend { background: var(--toalha-claro); color: var(--tinta); border-color: transparent; }
+nav.abas { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--espuma); display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--linha); margin-top: 22px; scrollbar-width: thin; }
+nav.abas button { font: 600 14px var(--f-texto); padding: 12px 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--tinta-suave); cursor: pointer; white-space: nowrap; }
+nav.abas button small { font-family: var(--f-mono); font-weight: 400; font-size: 11px; opacity: .8; margin-right: 4px; }
+nav.abas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--azul); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+section.painel { padding-top: 28px; display: grid; gap: 22px; }
+section.painel > * { min-width: 0; }
+h2 { font-family: var(--f-titulo); font-weight: 400; font-size: 24px; margin: 6px 0 0; text-wrap: balance; }
+h3 { font-size: 16px; font-weight: 700; margin: 0; }
+p { margin: 0; max-width: 70ch; }
+.prosa { display: grid; gap: 10px; }
+.prosa ul, .prosa ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 72ch; }
+code { font-family: var(--f-mono); font-size: .86em; background: var(--azul-claro); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.aviso { border-left: 4px solid var(--toalha); background: var(--toalha-claro); padding: 12px 14px; border-radius: 0 8px 8px 0; max-width: 78ch; display: grid; gap: 6px; }
+.aviso.ok { border-color: var(--ok); background: var(--ok-claro); }
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.cartao { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.cartao .k { font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--azul); }
+.tabela { overflow-x: auto; border: 1px solid var(--linha); border-radius: 10px; background: var(--papel); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: 12px; font-weight: 500; color: var(--tinta-suave); background: var(--espuma); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+/* fluxo */
+.fluxo { display: grid; gap: 0; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.fluxo .f { display: grid; grid-template-columns: 170px 1fr; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--linha); }
+.fluxo .f:last-child { border-bottom: 0; }
+.fluxo .f > * { min-width: 0; }
+.fluxo .q { font-family: var(--f-mono); font-size: 13px; color: var(--azul); }
+.fluxo .f.laco { background: var(--azul-claro); }
+/* checklist */
+.progresso { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-family: var(--f-mono); font-size: 13px; color: var(--tinta-suave); }
+.barra { flex: 1 1 200px; max-width: 380px; height: 8px; background: var(--linha); border-radius: 999px; overflow: hidden; }
+.barra i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .25s; }
+.fase { display: grid; gap: 8px; }
+.fase > h3 { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-suave); font-weight: 500; }
+.passo { display: grid; grid-template-columns: 26px 1fr; gap: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 12px 14px; }
+.passo > input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--ok); cursor: pointer; }
+.passo .corpo { display: grid; gap: 6px; min-width: 0; }
+.passo .t { font-weight: 700; cursor: pointer; }
+.teste .t { cursor: pointer; }
+.feito-doc { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 14px; cursor: pointer; }
+.feito-doc input { width: 18px; height: 18px; accent-color: var(--ok); }
+.passo .d { color: var(--tinta-suave); font-size: 15px; display: grid; gap: 6px; }
+.passo .d ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.passo.feito { opacity: .6; }
+.passo.feito .t { text-decoration: line-through; }
+/* código */
+.cod { position: relative; min-width: 0; }
+.cod pre { margin: 0; background: var(--codigo-fundo); color: var(--codigo-texto); padding: 14px 16px; padding-top: 38px; border-radius: 10px; overflow: auto; max-height: 60vh; font: 12.5px/1.55 var(--f-mono); tab-size: 2; white-space: pre; }
+.cod .rot { position: absolute; top: 10px; left: 14px; font: 11px var(--f-mono); color: #8ea3c4; letter-spacing: .04em; }
+.copiar { position: absolute; top: 7px; right: 8px; font: 500 12px var(--f-mono); padding: 4px 10px; border-radius: 6px; border: 1px solid #3a5070; background: #1a2e4d; color: #dfe8f7; cursor: pointer; }
+.copiar:hover { background: #24406a; }
+/* teste de aceite */
+.teste { display: grid; grid-template-columns: 26px 1fr; gap: 10px; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 14px; }
+.teste > input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--ok); }
+.teste .corpo { display: grid; gap: 8px; min-width: 0; }
+.teste .n { font-family: var(--f-mono); font-size: 12px; color: var(--azul); }
+.teste .esp { border-left: 3px solid var(--ok); padding-left: 10px; font-size: 15px; }
+.teste.feito { opacity: .6; }
+/* substituições */
+details.troca { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; }
+details.troca > summary { cursor: pointer; padding: 12px 16px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+details.troca > summary .num { font-family: var(--f-mono); font-size: 12px; color: var(--azul); min-width: 2ch; }
+details.troca .par { display: grid; gap: 10px; padding: 0 16px 16px; }
+details.troca .par .cod pre { max-height: 40vh; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rot-loc { color: #ffcf6e !important; }
+.rot-sub { color: #8fe3b6 !important; }
+.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--tinta); color: var(--espuma); font: 13px var(--f-mono); padding: 9px 14px; border-radius: 8px; opacity: 0; transform: translateY(6px); transition: .2s; pointer-events: none; }
+.toast.on { opacity: 1; transform: none; }
+@media (max-width: 640px) { .fluxo .f { grid-template-columns: 1fr; gap: 2px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="topo">
+    <div class="sobre"><b>PetCare Hub</b> · etapa 5 · bot</div>
+    <h1>Bot PetCare <span>no N8n</span></h1>
+    <p class="lede">Implantar o N8n do zero, aplicar os arquivos 13 e 14 no Supabase e aprovar o bot pelo canal de teste: um chat no navegador ligado ao mesmo motor que vai atender no WhatsApp. O provedor de WhatsApp entra depois, como um adaptador.</p>
+    <div class="chips">
+      <span class="chip ok">Arquivos 13 e 14: aceite B1–B8 OK (Postgres 16 local)</span>
+      <span class="chip ok">Motor: 11 cenários simulados OK, inclusive o canal de teste</span>
+      <span class="chip pend">Workflows ainda não importados num N8n</span>
+      <span class="chip pend">Provedor de WhatsApp em decisão</span>
+    </div>
+  </header>
+
+  <nav class="abas" role="tablist" aria-label="Seções do guia">
+    <button role="tab" id="aba-visao" aria-controls="visao" aria-selected="true">Visão geral</button>
+    <button role="tab" id="aba-railway" aria-controls="railway" aria-selected="false"><small>1</small>Railway</button>
+    <button role="tab" id="aba-supabase" aria-controls="supabase" aria-selected="false"><small>2</small>Supabase</button>
+    <button role="tab" id="aba-n8n" aria-controls="n8n" aria-selected="false"><small>3</small>N8n e canal de teste</button>
+    <button role="tab" id="aba-aceite" aria-controls="aceite" aria-selected="false"><small>4</small>Aceite pelo chat</button>
+    <button role="tab" id="aba-whatsapp" aria-controls="whatsapp" aria-selected="false">WhatsApp · em espera</button>
+    <button role="tab" id="aba-decisoes" aria-controls="decisoes" aria-selected="false">Decisões</button>
+    <button role="tab" id="aba-docs" aria-controls="docs" aria-selected="false">Atualizar docs</button>
+  </nav>
+
+  <!-- ============================ VISÃO GERAL ============================ -->
+  <section class="painel" id="visao" role="tabpanel" aria-labelledby="aba-visao">
+    <div class="progresso"><span>Progresso (abas 1 a 4)</span><span class="barra"><i id="barra-geral"></i></span><span id="txt-geral">0 de 0</span></div>
+
+    <div class="aviso">
+      <b>Situação em 06/11/2026</b>
+      <p>A Z-API virou Z-API Omni, só com API oficial da Meta. O provedor de WhatsApp está sendo decidido em outro chat. Enquanto isso, siga as abas 1 a 4: o bot inteiro fica pronto e aprovado pelo canal de teste. Quando o provedor for escolhido, mudam três peças (ler o webhook, enviar, alertar a queda) e o resto continua igual.</p>
+    </div>
+
+    <div class="prosa">
+      <h2>Como uma mensagem atravessa o sistema</h2>
+      <p>O N8n não lê nem grava tabela. Ele recebe a mensagem, deixa o <b>motor</b> decidir qual função do banco chamar, chama, devolve o resultado ao motor e repete até ter a resposta. Regra de negócio continua no Supabase.</p>
+    </div>
+    <div class="fluxo" aria-label="Caminho de uma mensagem">
+      <div class="f"><span class="q">Entrada</span><span>Hoje, o chat de teste do N8n. Depois, o webhook do provedor de WhatsApp. Cada canal tem o seu normalizador, que entrega ao motor sempre o mesmo formato de evento.</span></div>
+      <div class="f laco"><span class="q">Motor ⇄ RPC</span><span>O motor pede uma função por vez (<code>bot_entrada</code>, <code>bot_servicos</code>, <code>reservar_agendamento</code>…). O sub-workflow <b>RPC Supabase</b> chama e devolve <code>{ status, body }</code>. Cada escrita roda uma vez só, porque o motor reaproveita o que já tem.</span></div>
+      <div class="f"><span class="q">Saída</span><span>No canal de teste, a resposta e os avisos ao dono aparecem no próprio chat. No WhatsApp, saem pelo provedor.</span></div>
+      <div class="f"><span class="q">Log</span><span><code>bot_registrar_mensagem</code> grava os metadados em <code>mensagens_log</code> (CM-11), com <code>canal = 'teste'</code> nos testes.</span></div>
+    </div>
+
+    <h2>O que foi entregue</h2>
+    <div class="tabela"><table>
+      <thead><tr><th>Arquivo</th><th>Para quê</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/schema/13_bot_n8n.sql</code></td><td>Estados novos da conversa, <code>telefone_avisos</code>, <code>fluxo_erros</code> e as funções que faltavam para o N8n não tocar em tabela. <code>lembretes_pendentes</code> refeita.</td></tr>
+        <tr><td><code>supabase/schema/14_canal_teste.sql</code></td><td>Canal <code>teste</code> aceito no banco e <code>bot_petshop_teste(slug)</code>, que só alcança pet shop marcado como teste.</td></tr>
+        <tr><td><code>supabase/testes/aceite_bot.sql</code></td><td>B1–B8. Desfaz tudo no fim. Esperado: "ACEITE BOT OK".</td></tr>
+        <tr><td><code>n8n/src/motor-conversa.js</code></td><td>Fonte do motor de conversa, independente do provedor.</td></tr>
+        <tr><td><code>n8n/workflows/00</code>, <code>04</code>, <code>05</code></td><td>RPC Supabase, Erros e Canal de teste: os três que você implanta agora.</td></tr>
+        <tr><td><code>n8n/workflows/01</code> a <code>03</code></td><td>Bot, lembretes e conexão no formato da Z-API clássica. Em espera: serão adaptados ao provedor escolhido.</td></tr>
+        <tr><td><code>n8n/build.js</code> · <code>n8n/test/simular.js</code> · <code>n8n/README.md</code></td><td>Gera os JSON a partir do motor · simula conversas contra um Postgres · regras de manutenção.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="aviso">
+      <b>O que ainda não foi provado</b>
+      <p>O SQL rodou num Postgres 16 local com o schema 01–11 e um substituto do arquivo 12 (só a função <code>bot_petshop_info</code>, com chaves que eu supus). Os workflows foram validados em estrutura e sintaxe, mas não importados num N8n. Os passos 2.5 e 3.8 existem para pegar as diferenças.</p>
+    </div>
+  </section>
+
+  <!-- ============================ 1 RAILWAY ============================ -->
+  <section class="painel" id="railway" role="tabpanel" aria-labelledby="aba-railway" hidden>
+    <div class="prosa">
+      <h2>1 · N8n do zero no Railway</h2>
+      <p>Os nomes de menu do Railway mudam com frequência. Se algo não bater, siga o que a tela mostra e me conte.</p>
+    </div>
+    <div class="fase">
+      <h3>Projeto</h3>
+      <label class="passo"><input type="checkbox" id="r1"><span class="corpo"><span class="t">Criar um projeto novo com o modelo do N8n com Postgres</span><span class="d"><span>Para desenvolver, o plano Hobby (~US$5/mês, a confirmar) deve bastar. Confira nas configurações do serviço se a opção de dormir sem uso está desligada: com ela ligada, a primeira mensagem demora ou se perde.</span><span>O Pro continua obrigatório antes da POC.</span></span></span></label>
+      <label class="passo"><input type="checkbox" id="r2"><span class="corpo"><span class="t">Guardar a <code>N8N_ENCRYPTION_KEY</code> nova</span><span class="d">O modelo gera a chave sozinho. Copie de Variables para o gerenciador de senhas. Sem ela, um backup do banco do N8n não abre as credenciais.</span></span></label>
+      <label class="passo"><input type="checkbox" id="r3"><span class="corpo"><span class="t">Fixar a versão da imagem do N8n</span><span class="d">Use uma tag de versão, não <code>latest</code>, para uma atualização não quebrar o bot sem aviso. Anote a versão. Os workflows não dependem de <code>$env</code>, então funcionam no N8n 1.x e no 2.x.</span></span></label>
+    </div>
+    <div class="fase">
+      <h3>Variáveis</h3>
+      <label class="passo"><input type="checkbox" id="r5"><span class="corpo"><span class="t">Definir estas, além das geradas pelo modelo</span><span class="d">
+        <div class="cod"><span class="rot">VARIÁVEIS</span><button class="copiar" type="button">Copiar</button><pre><code>N8N_EDITOR_BASE_URL=https://n8n.petcarehub.com.br
+WEBHOOK_URL=https://n8n.petcarehub.com.br
+GENERIC_TIMEZONE=America/Sao_Paulo
+TZ=America/Sao_Paulo
+N8N_PROXY_HOPS=1
+EXECUTIONS_DATA_SAVE_ON_ERROR=all
+EXECUTIONS_DATA_SAVE_ON_SUCCESS=none</code></pre></div>
+        <span><code>N8N_PROXY_HOPS=1</code> porque o Railway fica na frente como proxy. Nada de chave do Supabase em variável: vai em credencial (passo 3.1).</span></span></span></label>
+    </div>
+    <div class="fase">
+      <h3>Domínio</h3>
+      <label class="passo"><input type="checkbox" id="r6"><span class="corpo"><span class="t">Settings → Networking: adicionar <code>n8n.petcarehub.com.br</code></span><span class="d">Porta 5678. O Railway mostra o destino do CNAME (e, às vezes, um TXT de verificação).</span></span></label>
+      <label class="passo"><input type="checkbox" id="r7"><span class="corpo"><span class="t">Atualizar o DNS no Registro.br</span><span class="d">Troque o destino do CNAME <code>n8n</code> (hoje <code>n8n-production-d5dc.up.railway.app</code>) pelo novo. Ponto final no destino, se o Registro.br exigir. Crie o TXT, se pedido.</span></span></label>
+      <label class="passo"><input type="checkbox" id="r8"><span class="corpo"><span class="t">Deploy e criar a conta de owner em https://n8n.petcarehub.com.br</span><span class="d">Cadeado válido e tela de cadastro do N8n. Use o <code>contas@harpiatechstudio.com.br</code> e ligue a verificação em duas etapas, se a versão oferecer.</span></span></label>
+      <label class="passo"><input type="checkbox" id="r9"><span class="corpo"><span class="t">Apagar o projeto antigo do Railway</span><span class="d">Só depois de o novo estar no ar. Ele tinha o workflow antigo, que lia e gravava tabela direto, e o domínio <code>app.</code>, que é do painel.</span></span></label>
+    </div>
+  </section>
+
+  <!-- ============================ 2 SUPABASE ============================ -->
+  <section class="painel" id="supabase" role="tabpanel" aria-labelledby="aba-supabase" hidden>
+    <div class="prosa">
+      <h2>2 · Supabase: chave e arquivos 13 e 14</h2>
+      <p>Tudo pelo painel do Supabase e pelo SQL Editor. Nenhuma chave passa por esta conversa.</p>
+    </div>
+    <div class="fase">
+      <h3>Chaves</h3>
+      <label class="passo"><input type="checkbox" id="s1"><span class="corpo"><span class="t">Criar a Secret key dedicada <code>n8n-bot</code></span><span class="d"><span>Project Settings → API Keys → Secret keys → nova chave <code>n8n-bot</code>. Copie uma vez e cole só na credencial do N8n (passo 3.1).</span><span>Por que dedicada: cada consumidor tem a sua (<code>edge-convidar-membro</code>, <code>n8n-bot</code>). Vazou uma, você revoga só ela.</span></span></span></label>
+      <label class="passo"><input type="checkbox" id="s2"><span class="corpo"><span class="t">Aproveitar e conferir o <code>PETCARE_SECRET_KEY</code></span><span class="d">Edge Functions → Secrets. Se não existir, crie a chave <code>edge-convidar-membro</code>, grave o segredo e teste um convite. É a pendência da seção 7.2.</span></span></label>
+    </div>
+    <div class="fase">
+      <h3>Banco</h3>
+      <label class="passo"><input type="checkbox" id="s3"><span class="corpo"><span class="t">Rodar o arquivo 13 no SQL Editor</span><span class="d">Depois do 12. Pode rodar de novo. Esperado no fim: "Arquivo 13 aplicado".</span>
+        <div class="cod"><span class="rot">13_bot_n8n.sql</span><button class="copiar" type="button">Copiar</button><pre><code>{{SQL13}}</code></pre></div></span></label>
+      <label class="passo"><input type="checkbox" id="s3b"><span class="corpo"><span class="t">Rodar o arquivo 14</span><span class="d">Esperado: "Arquivo 14 aplicado: canal de teste".</span>
+        <div class="cod"><span class="rot">14_canal_teste.sql</span><button class="copiar" type="button">Copiar</button><pre><code>{{SQL14}}</code></pre></div></span></label>
+      <label class="passo"><input type="checkbox" id="s4"><span class="corpo"><span class="t">Rodar o <code>aceite_bot.sql</code></span><span class="d">Usa o Pet Feliz de teste e desfaz tudo. Esperado: oito linhas "OK B…" e "ACEITE BOT OK ✅". Se aparecer "FALHOU", me mande a linha.</span>
+        <div class="cod"><span class="rot">aceite_bot.sql</span><button class="copiar" type="button">Copiar</button><pre><code>{{ACEITE}}</code></pre></div></span></label>
+      <label class="passo"><input type="checkbox" id="s5"><span class="corpo"><span class="t">Me mandar o JSON de <code>bot_petshop_info</code></span><span class="d"><span>O motor lê <code>nome</code>, <code>saudacao</code>, <code>endereco</code> e <code>telefone_contato</code>. Se o arquivo 12 usa outras chaves, eu ajusto o motor antes do passo 3.</span>
+        <div class="cod"><span class="rot">SQL</span><button class="copiar" type="button">Copiar</button><pre><code>select public.bot_petshop_info('11111111-1111-4111-8111-111111111111');</code></pre></div></span></span></label>
+    </div>
+    <div class="fase">
+      <h3>Pet Feliz no canal de teste</h3>
+      <label class="passo"><input type="checkbox" id="s6"><span class="corpo"><span class="t">Ligar o bot do Pet Feliz no canal de teste</span><span class="d"><span>O celular de avisos é opcional no teste: os avisos ao dono aparecem no próprio chat, mas só se o campo estiver preenchido e for diferente do telefone da conversa.</span>
+        <div class="cod"><span class="rot">SQL</span><button class="copiar" type="button">Copiar</button><pre><code>update public.bot_config
+   set canal = 'teste',
+       telefone_avisos = '+5519911112222',   -- qualquer número diferente do tutor de teste
+       pausa_humana_horas = 1,
+       ativo = true
+ where petshop_id = '11111111-1111-4111-8111-111111111111';
+
+select p.slug, bc.canal, bc.ativo, bc.nome_bot, bc.telefone_avisos
+  from public.bot_config bc join public.petshops p on p.id = bc.petshop_id
+ where bc.petshop_id = '11111111-1111-4111-8111-111111111111';</code></pre></div>
+        <span>Esperado: slug <code>pet-feliz-teste</code>, canal <code>teste</code>, ativo <code>true</code>, bot Luna.</span></span></span></label>
+    </div>
+  </section>
+
+  <!-- ============================ 3 N8N ============================ -->
+  <section class="painel" id="n8n" role="tabpanel" aria-labelledby="aba-n8n" hidden>
+    <div class="prosa">
+      <h2>3 · Credenciais, workflows e primeiro teste</h2>
+    </div>
+    <div class="fase">
+      <h3>Credenciais (Credentials, nomes exatos)</h3>
+      <label class="passo"><input type="checkbox" id="n1"><span class="corpo"><span class="t"><code>Supabase · secret n8n-bot</code> (Header Auth)</span><span class="d">Name <code>apikey</code>, Value = a Secret key <code>n8n-bot</code>. <b>Sem</b> <code>Authorization: Bearer</code>: a chave nova não é JWT, e a documentação do Supabase manda enviá-la só no <code>apikey</code>.</span></span></label>
+      <label class="passo"><input type="checkbox" id="n2"><span class="corpo"><span class="t"><code>Canal de teste · acesso</code> (Basic Auth)</span><span class="d">Usuário e senha da página do chat de teste. Guarde no gerenciador de senhas. A página é pública na internet, então a senha precisa ser forte.</span></span></label>
+      <label class="passo"><input type="checkbox" id="n3"><span class="corpo"><span class="t"><code>Resend · alertas</code> (Header Auth)</span><span class="d">No Resend, crie a API key <code>n8n-alertas</code> com Sending access só para <code>petcarehub.com.br</code>. No N8n: Name <code>Authorization</code>, Value <code>Bearer re_…</code>. O workflow de erros manda no máximo um e-mail por hora.</span></span></label>
+    </div>
+    <div class="fase">
+      <h3>Importar (nesta ordem)</h3>
+      <label class="passo"><input type="checkbox" id="n4"><span class="corpo"><span class="t"><code>00-rpc-supabase.json</code> e trocar <code>SEU-PROJETO</code></span><span class="d">No nó "Chamar RPC", troque <code>SEU-PROJETO</code> pelo ref do projeto. É o único lugar com o endereço do Supabase. Selecione a credencial do Supabase no nó.</span></span></label>
+      <label class="passo"><input type="checkbox" id="n5"><span class="corpo"><span class="t"><code>04-erros.json</code> e <code>05-canal-teste.json</code></span><span class="d"><span>Em cada nó "RPC …" (Execute Workflow), escolha <b>PetCare · RPC Supabase</b> na lista: o id muda na importação. São 1 no 04 e 2 no 05.</span><span>No 04, selecione a credencial do Resend no nó "Resend · e-mail". No 05, a credencial <code>Canal de teste · acesso</code> no nó "Chat de teste".</span><span>Os workflows 01, 02 e 03 ficam de fora por enquanto.</span></span></span></label>
+      <label class="passo"><input type="checkbox" id="n6"><span class="corpo"><span class="t">Error Workflow</span><span class="d">No 00 e no 05: Settings → Error workflow → <b>PetCare · Erros</b>.</span></span></label>
+      <label class="passo"><input type="checkbox" id="n7"><span class="corpo"><span class="t">Conferir o nó "Chat de teste"</span><span class="d"><span>Deve estar com: <i>Make Chat Publicly Available</i> ligado, modo <i>Hosted Chat</i>, autenticação <i>Basic Auth</i>, e <i>Response Mode</i> = <i>Using 'Respond to Webhook' Node</i>.</span><span>Se a versão do N8n mostrar outras opções de resposta, escolha a que usa nó de resposta, me diga o nome que aparece e eu ajusto o JSON.</span></span></span></label>
+      <label class="passo"><input type="checkbox" id="n7b"><span class="corpo"><span class="t">Ativar o 04 e o 05</span><span class="d">O chat só fica disponível com o workflow ativo. A URL aparece no nó "Chat de teste" (Chat URL).</span></span></label>
+    </div>
+    <div class="fase">
+      <h3>Primeiro teste</h3>
+      <label class="passo"><input type="checkbox" id="n8"><span class="corpo"><span class="t">Abrir o chat e mandar "#ajuda" e depois "oi"</span><span class="d"><span>Ponha <code>EXECUTIONS_DATA_SAVE_ON_SUCCESS=all</code> só durante este teste. Confira:</span>
+        <ul>
+          <li>"#ajuda" responde com a lista de comandos e o telefone da conversa;</li>
+          <li>"oi" responde com a saudação da Luna e o menu;</li>
+          <li>na execução, o sub-workflow "RPC Supabase" com <code>statusCode</code> 200 só com o <code>apikey</code>.</li>
+        </ul>
+        <span>Se o chat não mostrar a resposta, mas a execução terminar sem erro, me mande o que aparece na saída do nó "Responder no chat". O campo de resposta (<code>output</code>) é o ponto que mais muda entre versões. Depois volte a variável para <code>none</code>.</span></span></span></label>
+    </div>
+  </section>
+
+  <!-- ============================ 4 ACEITE ============================ -->
+  <section class="painel" id="aceite" role="tabpanel" aria-labelledby="aba-aceite" hidden>
+    <div class="prosa">
+      <h2>4 · Aceite pelo chat de teste</h2>
+      <p>No chat você é o tutor. Avisos ao dono aparecem no próprio chat, marcados com 📣. Comandos: <code>#novo</code> (tutor novo), <code>#tel</code> (escolher telefone), <code>#dono texto</code> (dono responde pelo celular), <code>#devolver</code>, <code>#lembrete</code>, <code>#estado</code>.</p>
+      <p>No Pet Feliz (modo múltiplo), dois "Banho" no mesmo horário não conflitam. O conflito aparece com "Banho e tosa", que só a Ana faz.</p>
+    </div>
+
+    <label class="teste"><input type="checkbox" id="a1"><span class="corpo"><span class="n">1 · primeiro contato</span><span class="t"><b>O bot cadastra o tutor e o pet e agenda com a saudação do pet shop</b></span><span>"#novo" → "oi" → "1" → nome → nome do pet → porte → serviço → dia → horário → "1".</span><span class="esp">Saudação da Luna; resumo com preço; "Agendado! ✅" com o endereço do Pet Feliz, se cadastrado na aba Pet shop do painel.</span></span></label>
+    <label class="teste"><input type="checkbox" id="a2"><span class="corpo"><span class="n">2 · tutor conhecido</span><span class="t"><b>O bot oferece o pet já cadastrado</b></span><span>Na mesma conversa: "oi" → "1". Depois, "#tel 19966665555" (a Elisa, cliente do Pet Rival com consentimento) → "oi" → "1".</span><span class="esp">Você: "Oi, &lt;nome&gt;!" e o pet do teste 1. Elisa: o Bob aparece na lista sem nenhuma menção ao Pet Rival.</span></span></label>
+    <label class="teste"><input type="checkbox" id="a3"><span class="corpo"><span class="n">3 · feriado e folga</span><span class="t"><b>Feriado e folga não aparecem</b></span><span>No painel, bloqueie um dia inteiro da próxima semana (feriado) e uma folga da Ana num dia útil. No chat, peça "Banho e tosa".</span><span class="esp">O feriado some da lista de dias. No dia da folga, os horários de "Banho e tosa" somem (só a Ana faz).</span></span></label>
+    <label class="teste"><input type="checkbox" id="a4"><span class="corpo"><span class="n">4 · conflito</span><span class="t"><b>Segunda reserva no mesmo horário recebe outra opção, sem erro</b></span><span>No chat, escolha "Banho e tosa" e um horário, e pare no resumo. No painel, crie um "Banho e tosa" no mesmo horário. Volte ao chat e responda "1".</span><span class="esp">"Esse horário acabou de ser reservado. 😕" e a lista nova. Nenhuma mensagem de erro.</span></span></label>
+    <label class="teste"><input type="checkbox" id="a5"><span class="corpo"><span class="n">5 · consultar e cancelar</span><span class="t"><b>Consulta, cancelamento e prazo mínimo</b></span><span>"2" lista os agendamentos. "3" → escolha um de outro dia. Depois crie no painel um agendamento para daqui a menos de 2 h nesse telefone e mande "3".</span><span class="esp">O primeiro cancela e aparece "📣 … Cancelamento pelo WhatsApp". O de menos de 2 h não aparece para cancelar: o bot diz que o prazo passou.</span></span></label>
+    <label class="teste"><input type="checkbox" id="a6"><span class="corpo"><span class="n">6 · pausa humana</span><span class="t"><b>O dono responde, o bot pausa e depois volta</b></span><span>"#dono já te respondo" → "1" → "#estado" → "#devolver" → "oi". Para testar a volta sozinha, use a pausa de 1 h ou o SQL abaixo.</span><span class="esp">Depois do #dono, o bot fica em silêncio e #estado mostra <code>humano</code>. Depois do #devolver, "oi" recebe o menu.</span>
+      <div class="cod"><span class="rot">SQL · encerrar a pausa agora</span><button class="copiar" type="button">Copiar</button><pre><code>update public.bot_conversas set humano_ate = now() - interval '1 minute'
+ where petshop_id = '11111111-1111-4111-8111-111111111111' and estado = 'humano';</code></pre></div></span></label>
+    <label class="teste"><input type="checkbox" id="a7"><span class="corpo"><span class="n">7 · lembrete</span><span class="t"><b>O lembrete sai e SIM e NÃO atualizam o status</b></span><span>Tenha dois agendamentos confirmados para amanhã neste telefone. "#lembrete" → "sim". "#lembrete" de novo → "não".</span><span class="esp">Lembrete com SIM/NÃO; "Confirmado para…"; depois "cancelei…", status cancelado no painel e aviso 📣 ao dono. Um terceiro "#lembrete" não reenvia.</span></span></label>
+    <label class="teste"><input type="checkbox" id="a9"><span class="corpo"><span class="n">9 · painel</span><span class="t"><b>Tudo aparece na agenda do painel</b></span><span>Abra a agenda do Pet Feliz e rode a consulta abaixo.</span><span class="esp">Agendamentos com origem bot e status certos. Mensagens no log com canal <code>teste</code>. Nenhum erro inesperado em <code>fluxo_erros</code>.</span>
+      <div class="cod"><span class="rot">SQL · conferência</span><button class="copiar" type="button">Copiar</button><pre><code>select a.inicio at time zone 'America/Sao_Paulo' as quando, a.status, a.origem, p.nome as pet
+  from public.agendamentos a join public.pets p on p.id = a.pet_id
+ where a.petshop_id = '11111111-1111-4111-8111-111111111111' and a.origem = 'bot'
+ order by a.inicio;
+
+select canal, direcao, tipo, status, count(*)
+  from public.mensagens_log
+ where petshop_id = '11111111-1111-4111-8111-111111111111'
+ group by 1, 2, 3, 4 order by 1, 2, 3;
+
+select * from public.fluxo_erros order by criado_em desc limit 10;</code></pre></div></span></label>
+
+    <div class="aviso"><b>O que fica para o provedor</b><p>O teste 8 (queda da conexão), o cron das 10h com envio real e a pausa disparada pelo celular de verdade dependem do provedor de WhatsApp. Ficam na aba "WhatsApp · em espera".</p></div>
+    <div class="aviso ok"><b>Depois do aceite</b><p>Volte <code>pausa_humana_horas</code> para 4 e <code>EXECUTIONS_DATA_SAVE_ON_SUCCESS</code> para <code>none</code>. Me conte o resultado para eu passar os ◐ dos documentos para ✅.</p></div>
+  </section>
+
+  <!-- ============================ WHATSAPP (EM ESPERA) ============================ -->
+  <section class="painel" id="whatsapp" role="tabpanel" aria-labelledby="aba-whatsapp" hidden>
+    <div class="aviso">
+      <b>Em espera: provedor em decisão</b>
+      <p>Os workflows <code>01</code>, <code>02</code> e <code>03</code> foram escritos para a Z-API clássica (QR Code, payload <code>ReceivedCallback</code>, header <code>Client-Token</code>). O Omni usa outro formato. Escolhido o provedor, eu adapto essas três peças e completo esta aba. O que segue vale para qualquer provedor.</p>
+    </div>
+    <div class="prosa">
+      <h2>O que o provedor precisa oferecer</h2>
+      <ul>
+        <li><b>Mensagem enviada pelo próprio número</b> chegando no webhook, com como diferenciar o que saiu pela API do que saiu pelo celular. Sem isso, a pausa automática (BT-18) não funciona.</li>
+        <li><b>Mídia não descartada no provedor:</b> o bot responde que só lê texto (BT-16).</li>
+        <li><b>Evento de queda</b> ou um endpoint de status, para o alerta (PL-03).</li>
+        <li><b>Id da mensagem enviada</b> na resposta do envio, para o log e para reconhecer o eco.</li>
+        <li><b>Token por número</b> guardado no Vault, lido por <code>bot_envio</code>.</li>
+        <li><b>Na API oficial:</b> lembrete como template de utilidade aprovado e avisos ao dono fora da janela de 24 h, o que pede template ou outro canal (e-mail, painel).</li>
+      </ul>
+      <h2>Testes que só existem com o provedor</h2>
+      <ul>
+        <li>8 · Queda da conexão gera e-mail em <code>suporte@</code> e aviso na volta.</li>
+        <li>6 real · o dono responde pelo celular e o bot pausa; o eco das mensagens do bot não pausa.</li>
+        <li>7 real · o cron das 10h manda o lembrete; rodar de novo não duplica.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================ DECISÕES ============================ -->
+  <section class="painel" id="decisoes" role="tabpanel" aria-labelledby="aba-decisoes" hidden>
+    <div class="prosa">
+      <h2>Decisões desta etapa</h2>
+      <p>Os trechos prontos para o documento-mestre estão na aba "Atualizar docs".</p>
+    </div>
+    <div class="grade">
+      <div class="cartao"><span class="k">Canal de WhatsApp</span><h3>Em reavaliação; canal de teste enquanto isso</h3><p>A Z-API virou Omni, só com API oficial. O bot fica pronto e aprovado pelo chat do N8n, e o provedor entra como um adaptador. O provedor está sendo escolhido em outro chat.</p></div>
+      <div class="cartao"><span class="k">Bloqueio</span><h3>Sem lembrete, aviso ao dono, bot não avisa o tutor</h3><p>Agendamento em feriado ou folga não recebe lembrete. Às 10h da véspera, o dono recebe a lista com o telefone de cada tutor e resolve pelo painel. Remarcação pelo bot é BT-07, do F2.</p></div>
+      <div class="cartao"><span class="k">Menu</span><h3>Quatro opções e serviços do catálogo</h3><p>1) agendar 2) ver 3) cancelar 4) equipe. O serviço vem de <code>bot_servicos</code>, com preço do porte, em vez de banho e tosa fixos no menu.</p></div>
+      <div class="cartao"><span class="k">Chaves</span><h3>Secret key <code>n8n-bot</code> em credencial</h3><p>Chave dedicada, revogável sozinha, guardada como credencial do N8n e enviada só no <code>apikey</code>. Nenhum segredo em variável de ambiente.</p></div>
+      <div class="cartao"><span class="k">Motor em código</span><h3>Uma fonte, independente do provedor</h3><p>O motor é JavaScript puro, versionado e simulado; o N8n só faz o laço e as chamadas. Foi o que permitiu ligar o canal de teste sem tocar nas regras. Custo: não editar o código pelo N8n.</p></div>
+      <div class="cartao"><span class="k">Arquitetura para escalar</span><h3>Crescer por gatilho</h3><p>Gateway, RabbitMQ e Redis ficam para quando houver motivo. Ordem: adaptador por provedor agora; N8n em modo fila quando o tempo de resposta subir; motor fora do N8n quando o laço pesar; fila própria só com mais de um consumidor.</p></div>
+    </div>
+    <h2>Limites conhecidos</h2>
+    <div class="prosa"><ul>
+      <li><b>Mensagens simultâneas:</b> duas mensagens do mesmo tutor quase juntas rodam em paralelo e podem disputar o estado. Aceitável no MVP.</li>
+      <li><b>Espécie:</b> pet cadastrado pelo bot nasce como cão. O painel corrige.</li>
+      <li><b>Telefones do chat de teste:</b> cada conversa ganha um telefone fictício <code>+5599…</code>, gravado como tutor do Pet Feliz de teste. O arquivo 11 limpa tudo antes da POC.</li>
+      <li><b>Opt-out (TP-12):</b> o lembrete respeita <code>aceita_mensagens</code>, mas o bot ainda não entende "sair". É a rodada C.</li>
+    </ul></div>
+    <h2>Fontes consultadas</h2>
+    <div class="prosa"><ul>
+      <li>Supabase, migração para publishable e secret keys: supabase.com/docs/guides/getting-started/migrating-to-new-api-keys</li>
+      <li>N8n 2.0, mudanças incompatíveis: docs.n8n.io/2-0-breaking-changes</li>
+      <li>Z-API Omni, documentação: developer.omni.z-api.io</li>
+    </ul></div>
+  </section>
+
+  <!-- ============================ DOCS ============================ -->
+  <section class="painel" id="docs" role="tabpanel" aria-labelledby="aba-docs" hidden>
+    <div class="prosa">
+      <h2>Atualizar o documento-mestre e o Mapa</h2>
+      <p>Cada item tem o texto exato a localizar e o texto que entra no lugar. Os do documento-mestre foram conferidos contra a rev. 3.11: cada trecho existe uma vez. Os do Mapa usam o texto visível das células.</p>
+    </div>
+    <div class="progresso"><span>Aplicados</span><span class="barra"><i id="barra-docs"></i></span><span id="txt-docs">0 de 0</span></div>
+    <h2>Documento-mestre · aplicar agora</h2>
+    {{MESTRE}}
+    <h2>Mapa de Funcionalidades · aplicar agora</h2>
+    {{MAPA}}
+    <h2>Documento-mestre · só depois de escolher o provedor</h2>
+    <p>Estes trechos da seção 9 falam da configuração da Z-API. Deixe como estão até a decisão; o texto final depende do provedor.</p>
+    {{MESTRE_DEPOIS}}
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var CHAVE = 'pc-etapa5-v2';
+  var estado = {};
+  try { estado = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { estado = {}; }
+  function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch (e) {} }
+
+  // Abas (com #nome na URL)
+  var abas = Array.prototype.slice.call(document.querySelectorAll('nav.abas button'));
+  function mostrar(id, focar) {
+    abas.forEach(function (b) {
+      var on = b.getAttribute('aria-controls') === id;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      document.getElementById(b.getAttribute('aria-controls')).hidden = !on;
+      if (on && focar) b.focus();
+    });
+  }
+  abas.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('aria-controls');
+      mostrar(id);
+      try { history.replaceState(null, '', '#' + id); } catch (e) { location.hash = id; }
+    });
+  });
+  function pelaUrl() {
+    var h = (location.hash || '').slice(1);
+    if (h && document.getElementById(h) && document.getElementById(h).classList.contains('painel')) mostrar(h);
+  }
+  window.addEventListener('hashchange', pelaUrl);
+  pelaUrl();
+
+  // Checklists
+  var caixas = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+  function atualizar() {
+    var tarefas = caixas.filter(function (c) { return !c.closest('details'); });
+    var docs = caixas.filter(function (c) { return c.closest('#docs'); });
+    function barra(lista, idBarra, idTxt) {
+      var n = lista.filter(function (c) { return c.checked; }).length;
+      document.getElementById(idBarra).style.width = (lista.length ? 100 * n / lista.length : 0) + '%';
+      document.getElementById(idTxt).textContent = n + ' de ' + lista.length;
+    }
+    barra(tarefas, 'barra-geral', 'txt-geral');
+    barra(docs, 'barra-docs', 'txt-docs');
+    caixas.forEach(function (c) {
+      var alvo = c.closest('.passo, .teste');
+      if (alvo) alvo.classList.toggle('feito', c.checked);
+    });
+  }
+  caixas.forEach(function (c) {
+    if (estado[c.id]) c.checked = true;
+    c.addEventListener('change', function () { estado[c.id] = c.checked; salvar(); atualizar(); });
+  });
+  atualizar();
+  // Clicar no título de um passo ou teste marca a caixa
+  document.querySelectorAll('.passo .t, .teste .t').forEach(function (t) {
+    t.addEventListener('click', function () {
+      var c = t.closest('.passo, .teste').querySelector('input[type=checkbox]');
+      c.checked = !c.checked; c.dispatchEvent(new Event('change'));
+    });
+  });
+
+  // Copiar
+  var toast = document.getElementById('toast'), tm;
+  function avisar(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(tm); tm = setTimeout(function () { toast.classList.remove('on'); }, 1600); }
+  document.querySelectorAll('.copiar').forEach(function (b) {
+    b.addEventListener('click', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      var pre = b.parentElement.querySelector('pre');
+      var texto = pre.innerText;
+      function selecionar() {
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        avisar('Texto selecionado: use Ctrl+C');
+      }
+      try {
+        navigator.clipboard.writeText(texto).then(function () { avisar('Copiado'); }, selecionar);
+      } catch (e) { selecionar(); }
+    });
+  });
+})();
+</script>

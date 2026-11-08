@@ -1,0 +1,400 @@
+{
+  "name": "PetCare · Conexão WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "petcare-hub/zapi-conexao",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "b530e2e8-cc75-4d60-883e-b0c4b651cfd7",
+      "name": "Z-API · conexão",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "fdb47bdc-f784-4542-bd2c-dd6a6a6a4130"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Webhooks \"Ao desconectar\" e \"Ao conectar\" da Z-API.\nconst b = $json.body || {};\nlet conectado = null;\nif (b.type === 'ConnectedCallback' || b.connected === true) conectado = true;\nif (b.type === 'DisconnectedCallback' || b.disconnected === true || b.connected === false) conectado = false;\nif (conectado === null || !b.instanceId) return [];\nreturn [{ json: { resultados: {}, proximo: { chave: 'evento', fn: 'bot_conexao_evento',\n  args: { p_instance: b.instanceId, p_conectado: conectado, p_detalhe: 'webhook ' + (b.type || '') + (b.error ? ': ' + b.error : '') } } } }];\n"
+      },
+      "id": "420300b4-c4b3-4284-a7a3-5461b2825e7c",
+      "name": "Interpretar webhook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "b1e25e08-5ab1-44ce-a9ec-abff2abfdd67",
+      "name": "A cada 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { resultados: {}, proximo: { chave: 'inst', fn: 'bot_instancias_monitoradas', args: {} } } }];\n"
+      },
+      "id": "0aa6234d-8bb9-4cdb-9358-d18d73293629",
+      "name": "Pedir instâncias",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "PetCare · RPC Supabase"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "fe897785-b90e-44d4-b4e5-8df6714e2e14",
+      "name": "RPC · instâncias",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $json.resultados.inst;\nif (!r || r.status !== 200) throw new Error('bot_instancias_monitoradas falhou: ' + JSON.stringify(r));\nreturn (r.body || []).map((x) => ({ json: { inst: x } }));\n"
+      },
+      "id": "74945fa1-b823-4b97-b7cb-4cfb546d858d",
+      "name": "Um item por instância",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.z-api.io/instances/{{ $json.inst.zapi_instance_id }}/token/{{ $json.inst.token }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "c756833e-3080-4c38-9453-b928dc4e933b",
+      "name": "Z-API · status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        240
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "TROCAR",
+          "name": "Z-API · Client-Token"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GET /status da Z-API: { connected, error, smartphoneConnected }.\n// Sem resposta da Z-API não conta como queda (evita alarme falso); o erro vai no detalhe.\nconst insts = $('Um item por instância').all();\nreturn $input.all().flatMap((r, i) => {\n  const x = insts[i].json.inst;\n  const j = r.json || {};\n  if (!(j.statusCode >= 200 && j.statusCode < 300)) return [];\n  const b = j.body || {};\n  const detalhe = [b.error, b.smartphoneConnected === false ? 'celular sem internet' : null].filter(Boolean).join('; ') || null;\n  return [{ json: { resultados: {}, proximo: { chave: 'evento', fn: 'bot_conexao_evento',\n    args: { p_instance: x.zapi_instance_id, p_conectado: b.connected === true, p_detalhe: detalhe } } } }];\n});\n"
+      },
+      "id": "d44289a7-51ea-47ae-8ae3-af5c56fd09f6",
+      "name": "Interpretar status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "PetCare · RPC Supabase"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "6595bc6e-6c0d-42a5-8d1f-262c5a33cc20",
+      "name": "RPC · registrar conexão",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "346c1337-7263-47b2-9fa3-224e299c6b5f",
+              "leftValue": "={{ !!($json.resultados.evento.body && ($json.resultados.evento.body.alertar_queda || $json.resultados.evento.body.alertar_volta)) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "31f66e71-2328-4106-8e5a-506bfa595b65",
+      "name": "Alertar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((it) => {\n  const e = it.json.resultados.evento.body;\n  const queda = e.alertar_queda;\n  return { json: { email: {\n    assunto: queda ? `⚠️ WhatsApp desconectado: ${e.petshop}` : `✅ WhatsApp reconectado: ${e.petshop}`,\n    texto: queda\n      ? `O WhatsApp do pet shop ${e.petshop} está desconectado da Z-API.\\nBot ligado: ${e.bot_ativo ? 'sim' : 'não'}.\\nDetalhe: ${e.detalhe || '-'}\\n\\nO que fazer: abrir a instância no painel da Z-API e ler o QR Code com o celular do pet shop. Enquanto isso, o bot não responde e os lembretes não saem.\\nEste alerta se repete a cada 6 horas enquanto a conexão não voltar.`\n      : `O WhatsApp do pet shop ${e.petshop} voltou a se conectar. Nada a fazer.`,\n  } } };\n});\n"
+      },
+      "id": "69771f3f-fc79-4785-a779-4c88d9d2263e",
+      "name": "Montar e-mail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ from: 'PetCare Hub · Alertas <noreply@petcarehub.com.br>', to: ['suporte@petcarehub.com.br'], subject: $json.email.assunto, text: $json.email.texto }) }}"
+      },
+      "id": "743ac93f-d7b0-43d2-9bfc-cfc3571f90e6",
+      "name": "Resend · e-mail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        40
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "TROCAR",
+          "name": "Resend · alertas"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Conexão do WhatsApp (PL-03)\nDuas fontes: webhooks \"Ao desconectar\"/\"Ao conectar\" da Z-API e checagem a cada 15 min (pega queda que o webhook não avisou).\n`bot_conexao_evento` decide se alerta: na queda, de novo a cada 6 h se continuar caído, e na volta.\nE-mail via Resend para suporte@ (notificação no celular).",
+        "height": 240,
+        "width": 560
+      },
+      "id": "165021cc-c8f4-4ca4-97dc-239174fab47f",
+      "name": "Nota 2930",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -320
+      ]
+    }
+  ],
+  "connections": {
+    "Z-API · conexão": {
+      "main": [
+        [
+          {
+            "node": "Interpretar webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpretar webhook": {
+      "main": [
+        [
+          {
+            "node": "RPC · registrar conexão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A cada 15 min": {
+      "main": [
+        [
+          {
+            "node": "Pedir instâncias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedir instâncias": {
+      "main": [
+        [
+          {
+            "node": "RPC · instâncias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC · instâncias": {
+      "main": [
+        [
+          {
+            "node": "Um item por instância",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um item por instância": {
+      "main": [
+        [
+          {
+            "node": "Z-API · status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Z-API · status": {
+      "main": [
+        [
+          {
+            "node": "Interpretar status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpretar status": {
+      "main": [
+        [
+          {
+            "node": "RPC · registrar conexão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC · registrar conexão": {
+      "main": [
+        [
+          {
+            "node": "Alertar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alertar?": {
+      "main": [
+        [
+          {
+            "node": "Montar e-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar e-mail": {
+      "main": [
+        [
+          {
+            "node": "Resend · e-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
