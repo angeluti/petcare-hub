@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "e870414d-f19d-4eca-91eb-0b50d8add75b",
+      "id": "94b9d956-d9b4-4465-8830-af09261c469e",
       "name": "Quando um workflow falhar",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -16,7 +16,7 @@
       "parameters": {
         "jsCode": "const j = $json; const ex = j.execution || {}; const wf = j.workflow || {};\nconst erro = ex.error || (j.trigger && j.trigger.error) || {};\nconst args = {\n  p_workflow: wf.name || '?', p_no: ex.lastNodeExecuted || (erro.node && erro.node.name) || null,\n  p_mensagem: String(erro.message || erro.description || 'erro sem mensagem').slice(0, 2000),\n  p_execucao: ex.id ? String(ex.id) : null, p_url: ex.url || null, p_petshop: null,\n};\nreturn [{ json: { erro: args, resultados: {}, proximo: { chave: 'erro', fn: 'bot_registrar_erro', args } } }];\n"
       },
-      "id": "354f2542-4a16-44c6-b9b2-6d7db1026e66",
+      "id": "3334de62-8438-47c5-815c-77941a470798",
       "name": "Montar erro",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -37,7 +37,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "8cdb6365-f445-4666-8e91-cc8db93a8f23",
+      "id": "e328e2e7-d436-4423-817d-9146094ff70f",
       "name": "RPC · registrar erro",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -57,7 +57,7 @@
           },
           "conditions": [
             {
-              "id": "aa370278-6904-47a8-b718-e1219c5fe16f",
+              "id": "9bd57944-8048-4ebd-8cc7-0cf51fd84b0f",
               "leftValue": "={{ !!($json.resultados.erro.body && $json.resultados.erro.body.enviar_email) || ($json.resultados.erro.status !== 200) }}",
               "operator": {
                 "type": "boolean",
@@ -71,7 +71,7 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "903f5074-9416-4d2e-aa7a-df11163a564d",
+      "id": "ffefd587-ffbd-4367-8b27-929b6b6741f0",
       "name": "Primeiro da hora?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -84,7 +84,7 @@
       "parameters": {
         "jsCode": "const e = $json.erro;\nreturn [{ json: { email: {\n  assunto: `🔴 Erro no N8n: ${e.p_workflow}`,\n  texto: `Workflow: ${e.p_workflow}\\nNó: ${e.p_no || '-'}\\nErro: ${e.p_mensagem}\\nExecução: ${e.p_url || e.p_execucao || '-'}\\n\\nOutros erros da próxima hora ficam só na tabela fluxo_erros (sem e-mail).`,\n} } }];\n"
       },
-      "id": "febd5620-72f4-4931-82f6-905fa7ac62da",
+      "id": "44b8f24b-7109-4df8-8229-6cd9e65aa9d0",
       "name": "Montar e-mail",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -112,7 +112,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ from: 'PetCare Hub · Alertas <noreply@petcarehub.com.br>', to: ['suporte@petcarehub.com.br'], subject: $json.email.assunto, text: $json.email.texto }) }}"
       },
-      "id": "34b3a403-e955-4039-a059-740535051055",
+      "id": "4e0053d6-2b48-43c9-8d7b-7bd12076f074",
       "name": "Resend · e-mail",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -123,7 +123,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "TROCAR",
-          "name": "Resend · alertas"
+          "name": "resend n8n-alertas"
         }
       },
       "onError": "continueRegularOutput"
@@ -134,8 +134,8 @@
         "height": 200,
         "width": 520
       },
-      "id": "9378041e-a768-43a2-a846-bb4f1c46f2ef",
-      "name": "Nota 6e8c",
+      "id": "058c9d65-01ab-4b18-8fec-d93f08f4bffd",
+      "name": "Nota 8b75",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [

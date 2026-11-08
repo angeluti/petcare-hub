@@ -51,6 +51,8 @@ function simNao(t) {
   if (/^(nao|n|nao vou|nao posso|cancela|cancelar|nao vou poder)$/.test(t)) return 'nao';
   return null;
 }
+// Saudação no meio de um fluxo: o bot cumprimenta e repete a pergunta em vez de "Não entendi".
+const ehSaudacao = (t) => t.length <= 30 && /^(oi+|ola|opa|e ai|eai|hey|hello|bom dia|boa tarde|boa noite)\b/.test(t);
 const ehMenu = (t) => /^(0|menu|inicio|voltar|recomecar)$/.test(t);
 const ehAtendente = (t) => /(atendente|humano|falar com (alguem|uma pessoa|a equipe|voce)|pessoa de verdade)/.test(t);
 function atalhoMenu(t) {
@@ -131,7 +133,8 @@ function textoLembrete(l) {
   const nome = String(l.nome_tutor || '').split(' ')[0];
   return `Oi${nome ? ', ' + nome : ''}! Aqui é ${l.nome_bot || 'a assistente'} 🐾\n`
     + `Lembrete: amanhã (${l.data}) às ${l.hora} tem ${l.servicos || 'atendimento'} para ${l.pet}.\n\n`
-    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.';
+    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.\n'
+    + '_Para não receber lembretes, responda SAIR._';
 }
 
 // Comandos do canal de teste (#estado, #devolver, #lembrete). #dono vira evento fromme.
@@ -219,7 +222,7 @@ class Conversa {
     return { nome, saudacao: saud, endereco: i.endereco || null, telefone: i.telefone_contato || null };
   }
   aberto() { return this.rpc('aberto', 'bot_aberto_agora', { p_petshop: this.petshop }) || { aberto: true }; }
-  tutorId() { return this.dados.tutor_id || this.e.tutor_id; }
+  tutorId(d) { return (d || this.dados).tutor_id || this.dados.tutor_id || this.e.tutor_id; }
 
   dizer(t) { this.respostas.push(t); }
   avisarDono(t) { this.avisos.push(t); }
@@ -233,7 +236,22 @@ class Conversa {
       return;
     }
     const t = norm(ev.texto);
-    const est = this.estado;
+    let est = this.estado;
+
+    // TP-12: SAIR/PARAR/STOP desligam as mensagens automáticas; ATIVAR religa. Valem em qualquer passo.
+    if (/^(sair|parar|stop)$/.test(t)) return this.mensagensAutomaticas(false);
+    if (t === 'ativar') return this.mensagensAutomaticas(true);
+    // TP-15: REVOGAR desfaz o consentimento de compartilhamento.
+    if (t === 'revogar') return this.revogar();
+
+    if (est === 'aguardando_consentimento') {
+      const sn = simNao(t);
+      if (sn) return this.respostaConsentimento(sn === 'sim');
+      if (ehSaudacao(t) && this.repetir(this.cumprimento())) return;
+      // Outra coisa: conta como "não" (silêncio não é consentimento) e segue como conversa normal.
+      this.respostaConsentimento(false, true);
+      est = this.estado = 'idle';
+    }
 
     if (['novo', 'idle', 'menu'].includes(est)) {
       const sn = simNao(t);
@@ -244,6 +262,7 @@ class Conversa {
     }
     if (ehAtendente(t)) return this.transbordo();
     if (ehMenu(t) && est !== 'novo') return this.menu();
+    if (ehSaudacao(t) && this.repetir(this.cumprimento())) return;
 
     switch (est) {
       case 'novo': { const a = atalhoMenu(t); return a ? this.escolhaMenu(a) : this.boasVindas(); }
@@ -273,7 +292,14 @@ class Conversa {
     return `⏰ A loja está fechada agora e abre ${a.proxima_abertura}. Pelo WhatsApp eu agendo a qualquer hora.\n\n`;
   }
   boasVindas() {
-    this.dizer(`${this.info().saudacao}\n\n${this.linhaFechado()}${this.textoMenu()}`);
+    let saud = this.info().saudacao;
+    const nome = this.nomeTutor();
+    if (nome) {
+      // "Oi, eu sou a Luna…" vira "Oi, Elisa! Eu sou a Luna…"
+      const m = /^(oi|olá|ola|oie)[\s,!.]*/i.exec(saud);
+      saud = m ? `Oi, ${nome}! ` + saud.slice(m[0].length).replace(/^./, (c) => c.toUpperCase()) : `Oi, ${nome}! ${saud}`;
+    }
+    this.dizer(`${saud}\n\n${this.linhaFechado()}${this.textoMenu()}`);
     this.novoEstado = 'menu'; this.dados = {};
   }
   saudacaoConhecido() {
@@ -284,6 +310,29 @@ class Conversa {
   menu(prefixo) {
     this.dizer((prefixo || '') + this.textoMenu());
     this.novoEstado = 'menu'; this.dados = {};
+  }
+  // Nome do tutor: o do vínculo daqui; senão, o compartilhado com consentimento (arquivo 15).
+  nomeCompartilhado() {
+    if (this.e.conhecido_aqui || !this.e.tutor_id || !(this.e.pets_compartilhaveis || []).length) return null;
+    return this.rpc('nome_comp', 'bot_nome_compartilhado', { p_tutor: this.e.tutor_id }) || null;
+  }
+  nomeCompleto() { return this.dados.nome_tutor || (this.e.conhecido_aqui ? this.e.nome_tutor : this.nomeCompartilhado()) || ''; }
+  nomeTutor() { return primeiroNome(this.nomeCompleto()); }
+  cumprimento() { const n = this.nomeTutor(); return `Oi${n ? ', ' + n : ''}! 🙂 `; }
+  // Repete a pergunta do estado atual com um prefixo. Devolve false se o estado não é de pergunta.
+  // Estados de nome (tutor e pet) ficam de fora: "Oi" ali pode ser uma resposta.
+  repetir(prefixo) {
+    switch (this.estado) {
+      case 'aguardando_pet': return this.perguntarPet(prefixo), true;
+      case 'aguardando_porte': return this.perguntarPorte(prefixo), true;
+      case 'aguardando_servico': return this.oferecerServicos(prefixo), true;
+      case 'aguardando_data': return this.perguntarDia(prefixo), true;
+      case 'aguardando_hora': return this.oferecerHoras('horas', prefixo), true;
+      case 'aguardando_confirmacao': return this.resumo(prefixo), true;
+      case 'aguardando_cancelamento': return this.iniciarCancelamento(prefixo), true;
+      case 'aguardando_consentimento': return this.dizer(prefixo + this.dados.termo_texto), (this.novoEstado = 'aguardando_consentimento'), true;
+      default: return false;
+    }
   }
   escolhaMenu(n) {
     if (n === 1) return this.iniciarAgendamento();
@@ -298,9 +347,15 @@ class Conversa {
     const aqui = (this.e.pets || []).map((p) => ({ id: p.id, nome: p.nome, porte: p.porte, origem: 'aqui' }));
     const comp = (this.e.pets_compartilhaveis || []).map((p) => ({ id: p.id, nome: p.nome, porte: p.porte, origem: 'comp' }));
     const opcoes = [...aqui, ...comp];
+    // Quem ainda não é cliente deste pet shop e não tem nome compartilhado informa o nome primeiro.
+    // Com consentimento, o nome vem junto com os pets (decisão de 08/11/2026).
+    if (!this.e.conhecido_aqui && !this.nomeCompartilhado()) {
+      this.dados = { opcoes_pet: opcoes };
+      return this.pedirNomeTutor();
+    }
     if (!opcoes.length) {
       this.dados = {};
-      return this.e.conhecido_aqui ? this.pedirNomePet() : this.pedirNomeTutor();
+      return this.pedirNomePet();
     }
     this.dados = { opcoes_pet: opcoes };
     this.perguntarPet();
@@ -317,14 +372,20 @@ class Conversa {
     if (n && n <= ops.length) {
       const p = ops[n - 1];
       if (p.origem === 'comp') {
-        this.rpc('vincular', 'bot_vincular_pet_compartilhado', { p_petshop: this.petshop, p_tutor: this.e.tutor_id, p_pet: p.id });
+        this.rpc('vincular', 'bot_vincular_pet_compartilhado', { p_petshop: this.petshop, p_tutor: this.tutorId(), p_pet: p.id });
       }
-      this.dados = { pet: { id: p.id, nome: p.nome, porte: p.porte } };
+      this.dados = { tutor_id: this.dados.tutor_id, nome_tutor: this.dados.nome_tutor, pet: { id: p.id, nome: p.nome, porte: p.porte } };
       return this.oferecerServicos();
     }
     if (n === ops.length + 1) {
-      this.dados = {};
-      return this.e.conhecido_aqui ? this.pedirNomePet() : this.pedirNomeTutor();
+      this.dados = { tutor_id: this.dados.tutor_id, nome_tutor: this.dados.nome_tutor };
+      if (!this.e.conhecido_aqui && !this.dados.tutor_id) {
+        // Pet novo de quem ainda não tem vínculo aqui: cria o vínculo com o nome compartilhado.
+        const nome = this.nomeCompartilhado();
+        if (!nome) return this.pedirNomeTutor();
+        this.dados = { tutor_id: this.rpc('cad_tutor', 'bot_cadastrar_tutor', { p_petshop: this.petshop, p_telefone: this.ev.telefone, p_nome: nome }), nome_tutor: nome };
+      }
+      return this.pedirNomePet();
     }
     this.perguntarPet('Não entendi. 🙂 ');
   }
@@ -340,7 +401,13 @@ class Conversa {
       return;
     }
     const tutor = this.rpc('cad_tutor', 'bot_cadastrar_tutor', { p_petshop: this.petshop, p_telefone: this.ev.telefone, p_nome: nome });
-    this.dados = { tutor_id: tutor };
+    const opcoes = this.dados.opcoes_pet || [];
+    this.dados = { tutor_id: tutor, nome_tutor: nome };
+    if (opcoes.length) {
+      // Pets compartilháveis (BT-17): aparecem como os daqui, sem citar a origem.
+      this.dados.opcoes_pet = opcoes;
+      return this.perguntarPet(`Prazer, ${primeiroNome(nome)}! `);
+    }
     this.pedirNomePet(`Prazer, ${primeiroNome(nome)}! `);
   }
   pedirNomePet(prefixo) {
@@ -370,7 +437,7 @@ class Conversa {
       p_petshop: this.petshop, p_tutor: this.tutorId(), p_nome: this.dados.pet_nome, p_porte: porte,
       p_especie: 'cao', p_raca: null, p_nascimento: null,
     });
-    this.dados = { tutor_id: this.dados.tutor_id, pet: { id: pet, nome: this.dados.pet_nome, porte } };
+    this.dados = { tutor_id: this.dados.tutor_id, nome_tutor: this.dados.nome_tutor, pet: { id: pet, nome: this.dados.pet_nome, porte } };
     this.oferecerServicos();
   }
 
@@ -407,14 +474,15 @@ class Conversa {
     this.dizer(`${prefixo || ''}Qual dia fica melhor?\n${lista(dias.map((x, i) => `${opcoes[i].rotulo} (${x.horarios} ${Number(x.horarios) === 1 ? 'horário' : 'horários'})`))}${RODAPE}`);
     this.novoEstado = 'aguardando_data';
   }
+  perguntarDia(prefixo) {
+    const ops = this.dados.opcoes_dia || [];
+    this.dizer(`${prefixo || ''}Qual dia fica melhor? Responda com o número:\n${lista(ops.map((o) => o.rotulo))}${RODAPE}`);
+    this.novoEstado = 'aguardando_data';
+  }
   recebeData(t) {
     const ops = this.dados.opcoes_dia || [];
     const n = num(t);
-    if (!n || n > ops.length) {
-      this.dizer(`Não entendi. 🙂 Responda com o número do dia:\n${lista(ops.map((o) => o.rotulo))}${RODAPE}`);
-      this.novoEstado = 'aguardando_data';
-      return;
-    }
+    if (!n || n > ops.length) return this.perguntarDia('Não entendi. 🙂 ');
     const { opcoes_dia, ...resto } = this.dados;
     this.dados = { ...resto, dia: ops[n - 1] };
     this.oferecerHoras('horas');
@@ -466,6 +534,14 @@ class Conversa {
           + (info.endereco ? `\n📍 ${info.endereco}` : '')
           + '\n\nNa véspera eu mando um lembrete. Para ver ou cancelar, é só digitar *menu*.');
         this.novoEstado = 'idle'; this.dados = {};
+        // TP-15: depois do agendamento, uma vez por pet shop, pede o consentimento de compartilhamento.
+        const termo = this.rpc('consent', 'bot_consentimento_pendente', { p_petshop: this.petshop, p_tutor: this.tutorId(d) });
+        if (termo && termo.versao) {
+          const texto = String(termo.texto).replace(/\{petshop\}/g, info.nome).replace(/\{pet\}/g, d.pet.nome);
+          this.dizer(texto);
+          this.novoEstado = 'aguardando_consentimento';
+          this.dados = { termo_versao: termo.versao, termo_texto: texto, pet_nome: d.pet.nome, tutor_id: this.tutorId(d) };
+        }
         return;
       }
       // Conflito: decide pelo code, nunca pelo status HTTP (PostgREST manda 400).
@@ -537,6 +613,38 @@ class Conversa {
       this.dizer(`Tudo bem, cancelei o horário de ${r.pet} em ${r.data} às ${r.hora}. Se quiser marcar outro dia, é só digitar *1*.`);
       this.avisarDono(`❌ Cancelamento pelo lembrete\n${r.nome_tutor || this.ev.telefone} cancelou ${r.pet}, ${r.data} às ${r.hora}. O horário ficou livre na agenda.`);
     }
+  }
+
+  // --- consentimento e opt-out (TP-12, TP-15)
+  respostaConsentimento(aceite, semResposta) {
+    const d = this.dados;
+    const tutor = d.tutor_id || this.e.tutor_id;
+    this.rpc('consent_reg', 'bot_registrar_consentimento', {
+      p_petshop: this.petshop, p_tutor: tutor, p_aceite: aceite, p_versao: d.termo_versao,
+      p_evidencia: { canal: 'bot', message_id: this.ev.message_id || null, resposta: String(this.ev.texto || '').slice(0, 60), sem_resposta: !!semResposta },
+    });
+    this.novoEstado = 'idle'; this.dados = {};
+    if (semResposta) return;
+    const pet = d.pet_nome || 'seu pet';
+    this.dizer(aceite
+      ? `Obrigado! ✅ Os dados do ${pet} ficam disponíveis nos pet shops do PetCare Hub que você visitar. Para desfazer, é só responder *REVOGAR*.`
+      : `Tudo bem! Os dados do ${pet} ficam só aqui no ${this.info().nome}. 🙂`);
+  }
+  mensagensAutomaticas(aceita) {
+    const ok = this.rpc('msgs', 'bot_definir_mensagens', { p_petshop: this.petshop, p_telefone: this.ev.telefone, p_aceita: aceita });
+    this.salvar = false;   // não mexe no passo em que a conversa estava
+    const nome = this.info().nome;
+    if (!ok) return this.dizer('Por aqui você ainda não recebe mensagens automáticas. 🙂 Para o menu, digite *menu*.');
+    this.dizer(aceita
+      ? `Pronto! Você volta a receber os lembretes do ${nome}. 🐾`
+      : `Pronto, você não vai mais receber lembretes automáticos do ${nome}. Para voltar a receber, responda *ATIVAR*. Pode continuar falando comigo normalmente.`);
+  }
+  revogar() {
+    this.salvar = false;
+    const ok = this.e.tutor_id ? this.rpc('revogar', 'bot_revogar_consentimento', { p_tutor: this.e.tutor_id }) : false;
+    this.dizer(ok
+      ? 'Feito. ✅ Os dados do seu pet e o seu nome deixam de ser compartilhados com outros pet shops do PetCare Hub. O cadastro aqui continua como está.'
+      : 'Você não tinha autorizado o compartilhamento, então não há nada a desfazer. 🙂');
   }
 
   // --- transbordo (BT-08, BT-12)

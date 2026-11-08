@@ -27,6 +27,8 @@ def trocas(lista, prefixo):
 t = (AQUI / 'guia_template.html').read_text()
 t = t.replace('{{SQL13}}', html.escape((RAIZ / 'supabase/schema/13_bot_n8n.sql').read_text()))
 t = t.replace('{{SQL14}}', html.escape((RAIZ / 'supabase/schema/14_canal_teste.sql').read_text()))
+t = t.replace('{{SQL15}}', html.escape((RAIZ / 'supabase/schema/15_nome_compartilhado.sql').read_text()))
+t = t.replace('{{SQL16}}', html.escape((RAIZ / 'supabase/schema/16_consentimento_optout.sql').read_text()))
 t = t.replace('{{ACEITE}}', html.escape((RAIZ / 'supabase/testes/aceite_bot.sql').read_text()))
 t = t.replace('{{MESTRE}}', trocas(subs.MESTRE, 'dm'))
 t = t.replace('{{MAPA}}', trocas(subs.MAPA, 'mp'))

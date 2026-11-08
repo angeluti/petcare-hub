@@ -10,14 +10,20 @@ const path = require('path');
 const crypto = require('crypto');
 
 const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';   // troque no nó "Chamar RPC" depois de importar
-const CRED_SUPABASE = { httpHeaderAuth: { id: 'TROCAR', name: 'Supabase · secret n8n-bot' } };
+const CRED_SUPABASE = { httpHeaderAuth: { id: 'TROCAR', name: 'supabase n8n-bot' } };
 const CRED_ZAPI = { httpHeaderAuth: { id: 'TROCAR', name: 'Z-API · Client-Token' } };
-const CRED_CHAT = { httpBasicAuth: { id: 'TROCAR', name: 'Canal de teste · acesso' } };
-const CRED_RESEND = { httpHeaderAuth: { id: 'TROCAR', name: 'Resend · alertas' } };
+const CRED_CHAT = { httpBasicAuth: { id: 'TROCAR', name: 'chat de teste' } };
+const CRED_RESEND = { httpHeaderAuth: { id: 'TROCAR', name: 'resend n8n-alertas' } };
 const EMAIL_ALERTAS = 'suporte@petcarehub.com.br';
 const REMETENTE = 'PetCare Hub · Alertas <noreply@petcarehub.com.br>';
 
-const id = () => crypto.randomUUID();
+// Ids determinísticos: reimportar um workflow não muda a URL do chat nem dos webhooks.
+let _wf = 'base', _seq = 0;
+const id = () => {
+  const h = crypto.createHash('sha1').update(`${_wf}:${_seq++}`).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+};
+const novoWf = (nome) => { _wf = nome; _seq = 0; };
 const motor = fs.readFileSync(path.join(__dirname, 'src', 'motor-conversa.js'), 'utf8')
   .replace(/\nif \(typeof module[^\n]*\n?/, '\n');
 
@@ -40,10 +46,12 @@ function iff(name, pos, left, op, right, tipo = 'string') {
     id: id(), name, type: 'n8n-nodes-base.if', typeVersion: 2.2, position: pos,
   };
 }
-function http(name, pos, { method = 'POST', url, cred, body, timeout = 15000 }) {
+function http(name, pos, { method = 'POST', url, cred, body, timeout = 15000, texto = false }) {
+  const resposta = { fullResponse: true, neverError: true };
+  if (texto) resposta.responseFormat = 'text';   // Supabase devolve valor solto ou corpo vazio
   const p = {
     method, url, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-    options: { response: { response: { fullResponse: true, neverError: true } }, timeout },
+    options: { response: { response: resposta }, timeout },
   };
   if (body) { p.sendBody = true; p.specifyBody = 'json'; p.jsonBody = body; }
   return { parameters: p, id: id(), name, type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: pos, credentials: cred, onError: 'continueRegularOutput' };
@@ -113,23 +121,32 @@ const grava = (arq, wf) => fs.writeFileSync(path.join(saida, arq), JSON.stringif
 
 // =========================================================== 0. RPC Supabase
 {
+  novoWf('0.');
   const n = [
     { parameters: { inputSource: 'passthrough' }, id: id(), name: 'Ao ser chamado', type: 'n8n-nodes-base.executeWorkflowTrigger', typeVersion: 1.1, position: [0, 0] },
     http('Chamar RPC', [240, 0], {
       url: `=${SUPABASE_URL}/rest/v1/rpc/{{ $json.proximo.fn }}`, cred: CRED_SUPABASE,
-      body: '={{ JSON.stringify($json.proximo.args || {}) }}',
+      body: '={{ JSON.stringify($json.proximo.args || {}) }}', texto: true,
     }),
     code('Guardar resultado', [480, 0], `
 // Junta a resposta da RPC ao contexto que chegou, em resultados[chave].
+// O nó HTTP recebe a resposta como texto: o Supabase devolve valor solto
+// ("uuid", true) ou corpo vazio (função void), que o modo JSON do N8n recusa.
 // Conflito de horário chega como HTTP 400 com body.code = "23P01":
 // quem decide é quem chamou, sempre pelo code.
 const entradas = $('Ao ser chamado').all();
+const ler = (t) => {
+  if (t === undefined || t === null) return null;
+  if (typeof t !== 'string') return t;
+  if (t.trim() === '') return null;
+  try { return JSON.parse(t); } catch (e) { return t; }
+};
 return $input.all().map((r, i) => {
   const ctx = entradas[i].json;
   const p = ctx.proximo || {};
   const j = r.json || {};
   const res = j.statusCode !== undefined
-    ? { status: j.statusCode, body: j.body === undefined || j.body === '' ? null : j.body }
+    ? { status: j.statusCode, body: ler(j.body !== undefined ? j.body : j.data) }
     : { status: 0, body: { code: 'REDE', message: String((j.error && j.error.message) || JSON.stringify(j)).slice(0, 300) } };
   const { proximo, ...resto } = ctx;
   return { json: { ...resto, resultados: { ...(ctx.resultados || {}), [p.chave || p.fn]: res }, passos: (ctx.passos || 0) + 1 } };
@@ -144,6 +161,7 @@ return $input.all().map((r, i) => {
 
 // =========================================================== 1. Bot conversa
 {
+  novoWf('1.');
   const n = [
     webhook('Z-API · Ao receber', [0, 0], 'petcare-hub/zapi'),
     code('Normalizar evento', [220, 0], `
@@ -205,6 +223,7 @@ return $json.proximo.envios.map((e) => ({ json: { envio: e } }));`),
 
 // =========================================================== 2. Lembretes 24h
 {
+  novoWf('2.');
   const n = [
     cron('Todo dia às 10h', [0, 0], '0 10 * * *'),
     // A: lembretes
@@ -233,7 +252,8 @@ return $input.all().map((it) => {
   const nome = String(l.nome_tutor || '').split(' ')[0];
   const texto = \`Oi\${nome ? ', ' + nome : ''}! Aqui é \${l.nome_bot || 'a assistente'} 🐾\\n\`
     + \`Lembrete: amanhã (\${l.data}) às \${l.hora} tem \${l.servicos || 'atendimento'} para \${l.pet}.\\n\\n\`
-    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.';
+    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.\\n'
+    + '_Para não receber lembretes, responda SAIR._';
   return { json: { envio: { petshop_id: l.petshop_id, para: l.telefone, phone: String(l.telefone).replace(/\\D/g, ''),
     texto, tipo: 'lembrete', agendamento_id: l.agendamento_id, instancia: env.zapi_instance_id, token: env.token } } };
 });`),
@@ -299,6 +319,7 @@ return $input.all().map((it) => {
 
 // =========================================================== 3. Conexão WhatsApp (PL-03)
 {
+  novoWf('3.');
   const n = [
     webhook('Z-API · conexão', [0, 0], 'petcare-hub/zapi-conexao'),
     code('Interpretar webhook', [220, 0], `
@@ -368,6 +389,7 @@ return $input.all().map((it) => {
 
 // =========================================================== 4. Erros (PL-04)
 {
+  novoWf('4.');
   const n = [
     { parameters: {}, id: id(), name: 'Quando um workflow falhar', type: 'n8n-nodes-base.errorTrigger', typeVersion: 1, position: [0, 0] },
     code('Montar erro', [220, 0], `
@@ -401,6 +423,7 @@ return [{ json: { email: {
 
 // =========================================================== 5. Canal de teste (chat do N8n)
 {
+  novoWf('5.');
   const n = [
     {
       parameters: {
@@ -478,7 +501,8 @@ for (const e of p.envios || []) {
 if (!partes.length) partes.push('_(o bot não respondeu' + (p.nota ? ': ' + p.nota : '') + ')_');
 else if (p.nota) partes.push('_' + p.nota + '_');
 if (p.erro) partes.push('⚠️ ' + p.erro);
-return [{ json: { output: partes.join('\\n\\n— — —\\n\\n'), envios: p.envios || [] } }];`),
+// O chat do N8n renderiza markdown: dois espaços antes da quebra mantêm a linha.
+return [{ json: { output: partes.join('\\n\\n— — —\\n\\n').replace(/\\n/g, '  \\n'), envios: p.envios || [] } }];`),
     { parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify({ output: $json.output }) }}', options: {} },
       id: id(), name: 'Responder no chat', type: 'n8n-nodes-base.respondToWebhook', typeVersion: 1.1, position: [1320, 60] },
     code('Preparar log', [1540, 60], `

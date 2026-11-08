@@ -82,7 +82,7 @@ sql(`update bot_config set ativo = true, zapi_instance_id = '${INSTANCIA}', tele
        token_secret_id = coalesce(token_secret_id, vault.create_secret('token-simulado', 'zapi-pet-feliz-sim'))
      where petshop_id = '${PF}'`);
 const EU = '+5519955554444';          // tutor novo (o celular do Mauricio no aceite real)
-sql(`delete from mensagens_log where telefone = '${EU}'; delete from bot_conversas where telefone = '${EU}'; delete from agendamentos where tutor_id in (select id from tutores where telefone = '${EU}');
+sql(`delete from bot_conversas where telefone = '+5599000000123'; delete from mensagens_log where telefone = '${EU}'; delete from bot_conversas where telefone = '${EU}'; delete from agendamentos where tutor_id in (select id from tutores where telefone = '${EU}');
      delete from pets where tutor_id in (select id from tutores where telefone = '${EU}'); delete from tutores where telefone = '${EU}';`);
 // Reservas que o cenário 4 cria para lotar um horário (tutor Diego, origem manual)
 sql(`delete from agendamentos where tutor_id = 'c0000000-0000-4000-8000-000000000002' and origem = 'manual'`);
@@ -107,7 +107,13 @@ assert.strictEqual(r.envios[0].tipo, 'confirmacao');
 assert.ok(r.envios[0].agendamento_id);
 const ag1 = r.envios[0].agendamento_id;
 assert.strictEqual(sql(`select origem || '/' || status from agendamentos where id = '${ag1}'`), 'bot/confirmado');
+// TP-15: depois do primeiro agendamento, a pergunta de consentimento
+assert.match(texto(r), /Posso deixar os dados básicos do Pipoca/); assert.match(texto(r), /Pet Feliz/);
+assert.strictEqual(estado(EU), 'aguardando_consentimento');
+r = mensagem(EU, 'oi'); assert.match(texto(r), /^Oi, Mauricio! 🙂 Uma pergunta rápida/, 'oi repete a pergunta');
+r = mensagem(EU, 'Não'); assert.match(texto(r), /ficam só aqui/);
 assert.strictEqual(estado(EU), 'idle');
+assert.strictEqual(sql(`select count(*) from consentimentos c join tutores t on t.id = c.tutor_id where t.telefone = '${EU}'`), '0', 'NÃO não grava consentimento');
 ok('1 primeiro contato: saudação, cadastro de tutor e pet, agendamento confirmado (origem bot)');
 
 // 2. Tutor conhecido: oferece o pet já cadastrado
@@ -118,13 +124,32 @@ ok('2 tutor conhecido: pet já cadastrado na lista');
 
 // 2b. Tutor de outro pet shop (Elisa, com consentimento): vê o Bob sem citar o Pet Rival
 const ELISA = '+5519966665555';
-sql(`delete from bot_conversas where telefone = '${ELISA}' and petshop_id = '${PF}'`);
-r = mensagem(ELISA, 'oi'); r = mensagem(ELISA, '1');
-assert.match(texto(r), /\*1\* · Bob/); assert.doesNotMatch(texto(r), /Rival/);
+// Zera o vínculo da Elisa com o Pet Feliz (rodadas anteriores) para ela chegar como nova aqui
+sql(`delete from bot_conversas where telefone = '${ELISA}' and petshop_id = '${PF}';
+     delete from agendamentos where petshop_id = '${PF}' and tutor_id = (select id from tutores where telefone = '${ELISA}');
+     delete from pet_petshop where petshop_id = '${PF}' and pet_id = 'd0000000-0000-4000-8000-000000000004';
+     delete from tutor_petshop where petshop_id = '${PF}' and tutor_id = (select id from tutores where telefone = '${ELISA}');`);
+r = mensagem(ELISA, 'oi'); assert.match(texto(r), /^Oi, Elisa! Eu sou a Luna/, 'cumprimenta pelo nome compartilhado');
+assert.doesNotMatch(texto(r), /Rival/);
+r = mensagem(ELISA, '1'); assert.match(texto(r), /Para qual pet/, 'com consentimento, vai direto aos pets');
+assert.match(texto(r), /\*1\* · Bob/); assert.doesNotMatch(texto(r), /seu nome|Rival/);
+// saudação no meio do fluxo: cumprimenta pelo nome e repete a pergunta
+r = mensagem(ELISA, 'oi'); assert.match(texto(r), /^Oi, Elisa! 🙂 Para qual pet/); assert.doesNotMatch(texto(r), /Não entendi/);
 r = mensagem(ELISA, '1'); assert.match(texto(r), /Qual serviço para Bob/);
+assert.strictEqual(sql(`select tp.nome from tutor_petshop tp join tutores t on t.id = tp.tutor_id where t.telefone = '${ELISA}' and tp.petshop_id = '${PF}'`), 'Elisa Prado', 'vínculo daqui com o nome compartilhado');
 assert.strictEqual(sql(`select count(*) from pet_petshop where petshop_id = '${PF}' and pet_id = 'd0000000-0000-4000-8000-000000000004'`), '1');
+r = mensagem(ELISA, 'bom dia'); assert.match(texto(r), /^Oi, Elisa! 🙂 Qual serviço para Bob/);
+// "Outro pet" de quem chega de outro pet shop: cria o vínculo com o nome compartilhado, sem perguntar
+sql(`delete from bot_conversas where telefone = '${ELISA}' and petshop_id = '${PF}';
+     delete from pet_petshop where petshop_id = '${PF}' and pet_id = 'd0000000-0000-4000-8000-000000000004';
+     delete from tutor_petshop where petshop_id = '${PF}' and tutor_id = (select id from tutores where telefone = '${ELISA}');`);
+r = mensagem(ELISA, 'oi'); r = mensagem(ELISA, '1'); r = mensagem(ELISA, '2');
+assert.match(texto(r), /nome do seu pet/); assert.doesNotMatch(texto(r), /seu nome\?/);
+assert.strictEqual(sql(`select tp.nome from tutor_petshop tp join tutores t on t.id = tp.tutor_id where t.telefone = '${ELISA}' and tp.petshop_id = '${PF}'`), 'Elisa Prado');
+// sem consentimento: o bot pergunta o nome (tutor novo, sem cadastro em lugar nenhum)
+r = mensagem('+5599000000123', 'oi'); assert.match(texto(r), /^Oi, eu sou a Luna/);
 r = mensagem(ELISA, '0');
-ok('2b tutor de outro pet shop escolhe o pet compartilhado, sem mencionar a origem');
+ok('2b tutor de outro pet shop com consentimento: cumprimentado pelo nome, vê o Bob sem citar a origem; oi no meio do fluxo repete a pergunta; Outro pet não pede o nome');
 
 // 3. Feriado não aparece entre os dias
 const feriado = sql(`select to_char((inicio at time zone 'America/Sao_Paulo')::date, 'DD/MM') from bloqueios where petshop_id = '${PF}' and tipo = 'feriado' limit 1`);
@@ -216,6 +241,7 @@ const T = (texto, extra = {}) => mensagem(TT, texto, { canal: 'teste', instance_
 r = T('oi'); assert.match(texto(r), /Luna/); assert.strictEqual(r.envios[0].canal, 'teste'); assert.ok(!r.envios[0].token);
 r = T('1'); r = T('Tester'); r = T('Bolinha'); r = T('1'); r = T(escolher(r, 'Banho —')); r = T('2'); r = T('1'); r = T('1');
 assert.match(texto(r), /Agendado/);
+r = T('2'); assert.match(texto(r), /^Oi|Tudo bem|menu|agendamentos/i, 'resposta fora de SIM/NÃO conta como não e segue');
 r = T(null, { tipo: 'comando', comando: 'estado' }); assert.match(r.nota, /Estado: idle/);
 r = T(null, { tipo: 'fromme', message_id: 'teste-dono-' + Date.now() }); assert.match(r.nota, /pausado/);
 r = T('1'); assert.strictEqual(r.envios.length, 0);
@@ -232,6 +258,35 @@ r = T('sim'); assert.match(texto(r), /Confirmado para/);
 r = mensagem(TT, 'oi', { canal: 'teste', instance_id: 'pet-rival-teste' }); assert.match(r.nota, /não está no canal de teste/);
 sql(`update bot_config set canal = 'zapi' where petshop_id = '${PF}'`);
 ok('10 canal de teste: conversa, #estado, #dono, #devolver, #lembrete e SIM, sem token nem WhatsApp');
+
+// 11. Consentimento (SIM e REVOGAR) e opt-out (SAIR e ATIVAR)
+sql(`update bot_config set canal = 'zapi' where petshop_id = '${PF}'`);
+const C = '+5599123450011';
+sql(`delete from consentimentos where tutor_id in (select id from tutores where telefone = '${C}');
+     delete from mensagens_log where telefone = '${C}'; delete from bot_conversas where telefone = '${C}';
+     delete from agendamentos where tutor_id in (select id from tutores where telefone = '${C}');
+     delete from pets where tutor_id in (select id from tutores where telefone = '${C}'); delete from tutores where telefone = '${C}';`);
+r = mensagem(C, 'oi'); r = mensagem(C, '1'); r = mensagem(C, 'Clara'); r = mensagem(C, 'Thor'); r = mensagem(C, '2');
+r = mensagem(C, escolher(r, 'Banho —')); r = mensagem(C, '2'); r = mensagem(C, '1'); r = mensagem(C, '1');
+assert.match(texto(r), /Agendado/); assert.match(texto(r), /dados básicos do Thor/);
+r = mensagem(C, 'sim'); assert.match(texto(r), /Obrigado! ✅/);
+assert.strictEqual(sql(`select c.versao_termo || '/' || c.canal from consentimentos c join tutores t on t.id = c.tutor_id where t.telefone = '${C}' and c.revogado_em is null`), 'bot-v0-rascunho-2026-11/bot');
+// segundo agendamento: não pergunta de novo
+r = mensagem(C, '1'); r = mensagem(C, '1'); r = mensagem(C, escolher(r, 'Banho —')); r = mensagem(C, '2'); r = mensagem(C, '2'); r = mensagem(C, '1');
+assert.match(texto(r), /Agendado/); assert.doesNotMatch(texto(r), /Posso deixar/);
+r = mensagem(C, 'REVOGAR'); assert.match(texto(r), /deixam de ser compartilhados/);
+assert.strictEqual(sql(`select count(*) from consentimentos c join tutores t on t.id = c.tutor_id where t.telefone = '${C}' and c.revogado_em is null`), '0');
+r = mensagem(C, 'revogar'); assert.match(texto(r), /não tinha autorizado/);
+// SAIR no meio de um fluxo: desliga e não perde o passo
+r = mensagem(C, '1'); assert.strictEqual(estado(C), 'aguardando_pet');
+r = mensagem(C, 'Sair'); assert.match(texto(r), /não vai mais receber lembretes/);
+assert.strictEqual(estado(C), 'aguardando_pet');
+assert.strictEqual(sql(`select tp.aceita_mensagens from tutor_petshop tp join tutores t on t.id = tp.tutor_id where t.telefone = '${C}' and tp.petshop_id = '${PF}'`), 'f');
+r = mensagem(C, 'ATIVAR'); assert.match(texto(r), /volta a receber/);
+assert.strictEqual(sql(`select tp.aceita_mensagens from tutor_petshop tp join tutores t on t.id = tp.tutor_id where t.telefone = '${C}' and tp.petshop_id = '${PF}'`), 't');
+r = mensagem('+5599123450099', 'parar'); assert.match(texto(r), /ainda não recebe/);
+r = mensagem(C, '0');
+ok('11 consentimento depois do 1º agendamento (SIM grava com versão; não repete; REVOGAR desfaz); SAIR e ATIVAR sem perder o passo');
 
 console.log(log.join('\n'));
 console.log('SIMULAÇÃO OK ✅');

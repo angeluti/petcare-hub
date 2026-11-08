@@ -1,6 +1,6 @@
 -- =====================================================================
 -- PetCare Hub · Aceite do arquivo 13 (RPCs do bot no N8n)
--- Rode no SQL Editor depois do 13 e do 14, com o seed de teste (Pet Feliz).
+-- Rode no SQL Editor depois dos arquivos 13 a 16, com o seed de teste (Pet Feliz).
 -- Tudo é desfeito no final. Resultado esperado: "ACEITE BOT OK".
 --   B1 bot_servicos e bot_envio
 --   B2 fromMe: eco do bot não pausa; mensagem do dono pausa
@@ -10,6 +10,9 @@
 --   B6 conexão: alerta na queda, sem repetir, alerta na volta
 --   B7 log de erro; RPCs fechadas para o usuário logado
 --   B8 canal de teste: só acha pet shop com canal 'teste' (arquivo 14)
+--   B9 nome do tutor compartilhado só com consentimento (arquivo 15)
+--   B10 consentimento pelo bot: pergunta uma vez, SIM grava com versão, REVOGAR desfaz (arquivo 16)
+--   B11 SAIR desliga o lembrete, ATIVAR religa (arquivo 16)
 -- =====================================================================
 create or replace function private.aceite_bot() returns setof text
 language plpgsql set search_path = '' as $$
@@ -133,6 +136,43 @@ begin
     assert public.bot_petshop_teste('pet-rival-teste') is null, 'B8: Pet Rival não está no canal de teste';
     assert not has_function_privilege('authenticated', 'public.bot_petshop_teste(text)', 'execute'), 'B8: fechada para o usuário logado';
     msgs := msgs || 'OK B8 canal de teste só alcança pet shop marcado como teste'::text;
+
+    -- B9
+    assert public.bot_nome_compartilhado('c0000000-0000-4000-8000-000000000003') is not null,
+      'B9: Elisa (com consentimento) deveria ter o nome compartilhado';
+    assert public.bot_nome_compartilhado(t_carla) is null, 'B9: Carla (sem consentimento) não pode ter o nome compartilhado';
+    assert not has_function_privilege('authenticated', 'public.bot_nome_compartilhado(uuid)', 'execute'), 'B9: fechada para o usuário logado';
+    msgs := msgs || 'OK B9 nome do tutor compartilhado só com consentimento'::text;
+
+    -- B10 (Carla: cliente do Pet Feliz, sem consentimento)
+    v_j := public.bot_consentimento_pendente(pf, t_carla);
+    assert v_j ->> 'versao' is not null and (v_j ->> 'texto') like '%{pet}%', 'B10: termo vigente deveria vir para a Carla';
+    v_t := public.bot_registrar_consentimento(pf, t_carla, true, v_j ->> 'versao', '{"teste": true}');
+    assert v_t = 'concedido' and private.tutor_consente(t_carla, 'compartilhar_dados_pet'), 'B10: SIM grava o consentimento';
+    assert public.bot_consentimento_pendente(pf, t_carla) is null, 'B10: não pergunta de novo';
+    select count(*) into v_n from public.consentimentos
+     where tutor_id = t_carla and canal = 'bot' and petshop_origem_id = pf and versao_termo = v_j ->> 'versao';
+    assert v_n = 1, 'B10: consentimento com canal, origem e versão';
+    assert public.bot_revogar_consentimento(t_carla), 'B10: REVOGAR';
+    assert not private.tutor_consente(t_carla, 'compartilhar_dados_pet'), 'B10: revogado';
+    assert public.bot_consentimento_pendente(pf, t_carla) is null, 'B10: depois de perguntado, não pergunta de novo neste pet shop';
+    assert not public.bot_revogar_consentimento(t_carla), 'B10: nada a revogar';
+    msgs := msgs || 'OK B10 consentimento: pergunta uma vez, SIM grava com versão e origem, REVOGAR desfaz'::text;
+
+    -- B11
+    v_ag := public.reservar_agendamento(pf, p_mel, t_carla, array[s_banho],
+              ((amanha + time '16:00') at time zone tz), ana, 'manual', null, true);
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 1, 'B11: lembrete pendente antes do SAIR';
+    assert public.bot_definir_mensagens(pf, '19988887777', false), 'B11: SAIR';
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 0, 'B11: depois do SAIR, sem lembrete';
+    assert public.bot_definir_mensagens(pf, tel, true), 'B11: ATIVAR';
+    select count(*) into v_n from public.lembretes_pendentes(pf) where agendamento_id = v_ag.id;
+    assert v_n = 1, 'B11: depois do ATIVAR, lembrete volta';
+    assert not public.bot_definir_mensagens(pf, '+5599000009999', false), 'B11: telefone sem vínculo';
+    assert not has_function_privilege('authenticated', 'public.bot_registrar_consentimento(uuid, uuid, boolean, text, jsonb)', 'execute'), 'B11: fechada para o usuário logado';
+    msgs := msgs || 'OK B11 SAIR desliga o lembrete, ATIVAR religa'::text;
 
     raise exception 'ROLLBACK_ACEITE';
   exception

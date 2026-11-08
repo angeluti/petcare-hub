@@ -25,18 +25,21 @@ credenciais do N8n, criadas à mão, e leem o token de cada pet shop no Supabase
 - **Não edite o código do motor dentro do N8n.** Edite `src/motor-conversa.js`, rode
   `node n8n/test/simular.js` (banco local ou de teste) e `node n8n/build.js`, e reimporte
   o `01-bot-conversa.json` (ou cole o novo código no nó).
+- **Atualizar só o motor:** `n8n/workflows/motor-passo-no-n8n.js` tem o código exato do nó "Motor (passo)". Abra o nó, apague o código e cole este arquivo inteiro. Não precisa reimportar o workflow.
 - Ao exportar do N8n para versionar, confira que o JSON não tem segredo: só `id` e `name`
   de credencial. O build já sai assim.
 - Conflito de horário: `reservar_agendamento` devolve HTTP 400 com `code: "23P01"`. Trate
   sempre pelo `code`.
 
-## Credenciais (criar no N8n → Credentials → Header Auth)
+## Credenciais (criar no N8n → Credentials)
 
-| Nome exato | Header | Valor |
+O título é o nome da credencial na lista; o campo Name do Header Auth é o nome do header.
+
+| Título | Name (header) | Valor |
 |---|---|---|
-| `Supabase · secret n8n-bot` | `apikey` | Secret key dedicada `n8n-bot` (`sb_secret_…`). Sem `Authorization: Bearer`: a chave nova não é JWT. |
-| `Canal de teste · acesso` (Basic Auth) | usuário e senha | Página pública do chat de teste: senha forte. |
-| `Resend · alertas` | `Authorization` | `Bearer re_…` (API key `n8n-alertas`, só envio, só `petcarehub.com.br`). |
+| `supabase n8n-bot` | `apikey` | Secret key dedicada `n8n-bot` (`sb_secret_…`). Sem `Authorization: Bearer`: a chave nova não é JWT. |
+| `chat de teste` (Basic Auth) | usuário e senha | Página pública do chat de teste: senha forte. |
+| `resend n8n-alertas` | `Authorization` | `Bearer re_…` (API key `n8n-alertas`, só envio, só `petcarehub.com.br`). |
 
 ## Testar sem WhatsApp
 

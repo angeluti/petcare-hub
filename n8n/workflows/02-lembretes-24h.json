@@ -12,7 +12,7 @@
           ]
         }
       },
-      "id": "c7f1f175-7eda-4422-b1c8-161a0905d32b",
+      "id": "aabd5f46-d99a-4f0d-8e1d-5aba9fdb748a",
       "name": "Todo dia às 10h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -25,7 +25,7 @@
       "parameters": {
         "jsCode": "return [{ json: { resultados: {}, proximo: { chave: 'pend', fn: 'lembretes_pendentes', args: { p_petshop: null } } } }];\n"
       },
-      "id": "0e13510b-e923-4b1a-8920-88b4107677af",
+      "id": "a1b43753-40c9-41c9-8626-0b8bd428f457",
       "name": "Pedir pendentes",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -46,7 +46,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "51190e10-862b-46b5-9bef-2144151bad13",
+      "id": "9f889870-279c-4261-851f-50e3bde878e5",
       "name": "RPC · pendentes",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -59,7 +59,7 @@
       "parameters": {
         "jsCode": "// lembretes_pendentes já filtra: confirmado, amanhã no fuso do pet shop, bot ligado,\n// tutor que aceita mensagens, fora de período bloqueado e dentro do limite semanal (CM-10).\nconst r = $json.resultados.pend;\nif (!r || r.status !== 200) throw new Error('lembretes_pendentes falhou: ' + JSON.stringify(r));\nreturn (r.body || []).map((l) => ({ json: { lembrete: l, resultados: {},\n  proximo: { chave: 'marcar', fn: 'bot_lembrete_marcar', args: { p_agendamento: l.agendamento_id } } } }));\n"
       },
-      "id": "c71645be-0bc0-492a-9aa7-bb6003ca58ee",
+      "id": "be325355-c358-47a4-8b9f-69e5bb3a56b6",
       "name": "Um item por lembrete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -80,7 +80,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "c44834d1-cf0c-4147-b487-c7c7616ea82b",
+      "id": "8b7af7fb-5eb6-4bae-8d93-cae684878b7d",
       "name": "RPC · marcar lembrete",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -100,7 +100,7 @@
           },
           "conditions": [
             {
-              "id": "d0a4ca33-9cd8-4c1f-aa7a-47fb0c23b183",
+              "id": "0df79a5d-ea88-41e8-8654-759170dea3fe",
               "leftValue": "={{ $json.resultados.marcar.body === true }}",
               "operator": {
                 "type": "boolean",
@@ -114,7 +114,7 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "cfb6b6d6-b99d-49a0-b007-873c6fb21892",
+      "id": "5488a501-3dc4-4d4e-8b0f-037c2e76b7da",
       "name": "Marcado agora?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -127,7 +127,7 @@
       "parameters": {
         "jsCode": "return $input.all().map((it) => ({ json: { ...it.json,\n  proximo: { chave: 'envio', fn: 'bot_envio', args: { p_petshop: it.json.lembrete.petshop_id } } } }));\n"
       },
-      "id": "eaf60b28-750f-44ea-8325-64ea268b7fcf",
+      "id": "a6b364e7-8c6b-48d7-8279-3df94388f648",
       "name": "Pedir dados de envio",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -148,7 +148,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "57f5efcd-838b-4bbd-890f-54ef7f14a04f",
+      "id": "d8de4603-193b-4137-82ca-efd0797794dd",
       "name": "RPC · dados de envio",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -159,9 +159,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// CM-02: texto do lembrete com SIM / NÃO. A resposta é tratada pelo bot\n// (bot_responder_lembrete) quando o tutor responder.\nreturn $input.all().map((it) => {\n  const l = it.json.lembrete;\n  const env = (it.json.resultados.envio || {}).body || {};\n  const nome = String(l.nome_tutor || '').split(' ')[0];\n  const texto = `Oi${nome ? ', ' + nome : ''}! Aqui é ${l.nome_bot || 'a assistente'} 🐾\\n`\n    + `Lembrete: amanhã (${l.data}) às ${l.hora} tem ${l.servicos || 'atendimento'} para ${l.pet}.\\n\\n`\n    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.';\n  return { json: { envio: { petshop_id: l.petshop_id, para: l.telefone, phone: String(l.telefone).replace(/\\D/g, ''),\n    texto, tipo: 'lembrete', agendamento_id: l.agendamento_id, instancia: env.zapi_instance_id, token: env.token } } };\n});\n"
+        "jsCode": "// CM-02: texto do lembrete com SIM / NÃO. A resposta é tratada pelo bot\n// (bot_responder_lembrete) quando o tutor responder.\nreturn $input.all().map((it) => {\n  const l = it.json.lembrete;\n  const env = (it.json.resultados.envio || {}).body || {};\n  const nome = String(l.nome_tutor || '').split(' ')[0];\n  const texto = `Oi${nome ? ', ' + nome : ''}! Aqui é ${l.nome_bot || 'a assistente'} 🐾\\n`\n    + `Lembrete: amanhã (${l.data}) às ${l.hora} tem ${l.servicos || 'atendimento'} para ${l.pet}.\\n\\n`\n    + 'Responda *SIM* para confirmar ou *NÃO* se não puder vir.\\n'\n    + '_Para não receber lembretes, responda SAIR._';\n  return { json: { envio: { petshop_id: l.petshop_id, para: l.telefone, phone: String(l.telefone).replace(/\\D/g, ''),\n    texto, tipo: 'lembrete', agendamento_id: l.agendamento_id, instancia: env.zapi_instance_id, token: env.token } } };\n});\n"
       },
-      "id": "1d22959a-1662-46c6-94da-58609d347662",
+      "id": "75561f41-69c7-4eae-87a3-7b6834391518",
       "name": "Montar lembrete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -189,7 +189,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ phone: $json.envio.phone, message: $json.envio.texto }) }}"
       },
-      "id": "c545b955-4793-4ae6-95cc-003ffabc1655",
+      "id": "0331f54d-19a1-43ce-8dd1-1443b976fb20",
       "name": "Z-API · lembrete",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -209,7 +209,7 @@
       "parameters": {
         "jsCode": "// Depois do envio: registra em mensagens_log (CM-11) com o id da Z-API.\n// O id é o que faz o fromMe do próprio bot ser reconhecido e ignorado.\nconst envios = $('Montar lembrete').all();\nreturn $input.all().map((r, i) => {\n  const e = envios[i].json.envio;\n  const j = r.json || {};\n  const ok = j.statusCode >= 200 && j.statusCode < 300;\n  const idExterno = ok && j.body ? (j.body.messageId || j.body.id || j.body.zaapId || null) : null;\n  return { json: {\n    envio: { ...e, token: undefined },\n    falhou: !ok,\n    resultados: {},\n    proximo: { chave: 'log', fn: 'bot_registrar_mensagem', args: {\n      p_petshop: e.petshop_id, p_telefone: e.para, p_direcao: 'saida', p_tipo: e.tipo,\n      p_status: ok ? 'enviada' : 'falha', p_agendamento: e.agendamento_id || null,\n      p_id_externo: idExterno, p_erro: ok ? null : JSON.stringify(j.body || j.error || j).slice(0, 500) } },\n  } };\n});\n"
       },
-      "id": "d2bf7538-a995-445b-921b-5c1dc6163720",
+      "id": "f5337d9d-80e3-44a9-8925-587b74500c7f",
       "name": "Preparar log do lembrete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -230,7 +230,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "21b7b222-a444-4947-a7af-3ac604569e2d",
+      "id": "2b3d776c-ee1c-4bbe-8ff6-13bc4388b510",
       "name": "RPC · registrar lembrete",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -250,7 +250,7 @@
           },
           "conditions": [
             {
-              "id": "8d1f1d68-36c8-48b6-8cc4-db22397f8387",
+              "id": "526ad25c-ff28-4489-86ce-24bc2c9927df",
               "leftValue": "={{ $json.falhou }}",
               "operator": {
                 "type": "boolean",
@@ -264,7 +264,7 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "9cc223f1-e2e4-4f9b-8297-3227952829c1",
+      "id": "8ac19bd4-af21-4e6e-809b-39a7353e8f60",
       "name": "Envio falhou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -277,7 +277,7 @@
       "parameters": {
         "jsCode": "return $input.all().map((it) => ({ json: { resultados: {},\n  proximo: { chave: 'desmarcar', fn: 'bot_lembrete_desmarcar', args: { p_agendamento: it.json.envio.agendamento_id } } } }));\n"
       },
-      "id": "5bd6ae94-e85d-45ab-b52c-6a7b2e02256d",
+      "id": "5a95b041-f432-47bf-83e7-2bf673204e98",
       "name": "Liberar para nova tentativa",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -298,7 +298,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "6e2fe103-a167-4248-9d36-feb2b44e3ce1",
+      "id": "e5e13252-b4f6-43f4-8ce3-505d355ec888",
       "name": "RPC · desmarcar",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -311,7 +311,7 @@
       "parameters": {
         "jsCode": "return [{ json: { resultados: {}, proximo: { chave: 'conf', fn: 'bot_agendamentos_em_bloqueio', args: { p_petshop: null } } } }];\n"
       },
-      "id": "85a8ae4a-dd8c-482d-b5a9-39ca67973a8c",
+      "id": "13aa2aec-d64c-4c83-8d19-6480f3b933c7",
       "name": "Pedir conflitos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -332,7 +332,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "df540f26-02ed-4e69-b02d-8c1b984716c1",
+      "id": "528ed8b6-ece5-4ef5-8635-bcd949f6ddce",
       "name": "RPC · conflitos",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -345,7 +345,7 @@
       "parameters": {
         "jsCode": "const r = $json.resultados.conf;\nif (!r || r.status !== 200) throw new Error('bot_agendamentos_em_bloqueio falhou: ' + JSON.stringify(r));\nreturn (r.body || []).filter((x) => x.telefone_avisos).map((x) => ({ json: { conflito: x, resultados: {},\n  proximo: { chave: 'envio', fn: 'bot_envio', args: { p_petshop: x.petshop_id } } } }));\n"
       },
-      "id": "b0336e3f-ff31-4b7a-b346-762c8add22bd",
+      "id": "afcb8f0f-b9a1-43d4-82ae-2f5a1f68a907",
       "name": "Um item por pet shop",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -366,7 +366,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "65ef52b4-b812-4cf0-9b7b-0573eac328d4",
+      "id": "f93024ae-e758-4c7a-86f2-c4f9a243328a",
       "name": "RPC · dados de envio (dono)",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -379,7 +379,7 @@
       "parameters": {
         "jsCode": "// Decisão da etapa 5: agendamento em período bloqueado não recebe lembrete;\n// o dono é avisado e resolve pelo painel (remarcar ou cancelar e falar com o tutor).\nreturn $input.all().map((it) => {\n  const x = it.json.conflito;\n  const env = (it.json.resultados.envio || {}).body || {};\n  const linhas = x.itens.map((a) => `• ${a.hora} — ${a.pet} (${a.tutor}, ${a.telefone})`).join('\\n');\n  const texto = `⚠️ Agenda de amanhã (${x.itens[0].data})\\n${x.itens.length === 1 ? 'Este agendamento cai' : 'Estes agendamentos caem'} em período bloqueado (feriado ou folga) e não receberam lembrete:\\n${linhas}\\n\\nRemarque ou cancele pelo painel e avise o tutor.`;\n  return { json: { envio: { petshop_id: x.petshop_id, para: x.telefone_avisos, phone: String(x.telefone_avisos).replace(/\\D/g, ''),\n    texto, tipo: 'alerta_dono', agendamento_id: null, instancia: env.zapi_instance_id, token: env.token } } };\n});\n"
       },
-      "id": "dded44cb-4d60-4f39-bec4-f0afcf1e2401",
+      "id": "ec0ca3c4-1a3f-4c1b-8272-698f1dc9b6bd",
       "name": "Montar aviso ao dono",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -407,7 +407,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ phone: $json.envio.phone, message: $json.envio.texto }) }}"
       },
-      "id": "f4594eaf-f3ac-4a08-bfaf-3b66244db701",
+      "id": "da445c51-a815-4abe-86d5-e21f41535723",
       "name": "Z-API · aviso ao dono",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -427,7 +427,7 @@
       "parameters": {
         "jsCode": "// Depois do envio: registra em mensagens_log (CM-11) com o id da Z-API.\n// O id é o que faz o fromMe do próprio bot ser reconhecido e ignorado.\nconst envios = $('Montar aviso ao dono').all();\nreturn $input.all().map((r, i) => {\n  const e = envios[i].json.envio;\n  const j = r.json || {};\n  const ok = j.statusCode >= 200 && j.statusCode < 300;\n  const idExterno = ok && j.body ? (j.body.messageId || j.body.id || j.body.zaapId || null) : null;\n  return { json: {\n    envio: { ...e, token: undefined },\n    falhou: !ok,\n    resultados: {},\n    proximo: { chave: 'log', fn: 'bot_registrar_mensagem', args: {\n      p_petshop: e.petshop_id, p_telefone: e.para, p_direcao: 'saida', p_tipo: e.tipo,\n      p_status: ok ? 'enviada' : 'falha', p_agendamento: e.agendamento_id || null,\n      p_id_externo: idExterno, p_erro: ok ? null : JSON.stringify(j.body || j.error || j).slice(0, 500) } },\n  } };\n});\n"
       },
-      "id": "49f1df00-b16a-4773-a6ad-77416ca35973",
+      "id": "0882d284-fbff-40ea-8e8f-0161826cd3df",
       "name": "Preparar log do aviso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -448,7 +448,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "68e31686-46d6-43df-bb6d-87ba2a9bce06",
+      "id": "201bb546-5fbc-4b1e-827c-3854764ad1af",
       "name": "RPC · registrar aviso",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -463,8 +463,8 @@
         "height": 230,
         "width": 560
       },
-      "id": "55359a29-9845-46e0-a1c1-86f5e36a481e",
-      "name": "Nota 1661",
+      "id": "d219573e-540e-469d-830c-e177620522a7",
+      "name": "Nota fc92",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [

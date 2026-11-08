@@ -5,7 +5,7 @@
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "65f971fb-85dd-452c-9848-d6ba3c113fc6",
+      "id": "b96275b3-d418-4ca0-8c4b-af7050bd58b1",
       "name": "Ao ser chamado",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -24,7 +24,8 @@
           "response": {
             "response": {
               "fullResponse": true,
-              "neverError": true
+              "neverError": true,
+              "responseFormat": "text"
             }
           },
           "timeout": 15000
@@ -33,7 +34,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.proximo.args || {}) }}"
       },
-      "id": "c85b347a-4586-45b3-ac1c-be70f517056a",
+      "id": "8357667f-c276-4fd1-8e9d-fc5529f40798",
       "name": "Chamar RPC",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -44,16 +45,16 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "TROCAR",
-          "name": "Supabase · secret n8n-bot"
+          "name": "supabase n8n-bot"
         }
       },
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Junta a resposta da RPC ao contexto que chegou, em resultados[chave].\n// Conflito de horário chega como HTTP 400 com body.code = \"23P01\":\n// quem decide é quem chamou, sempre pelo code.\nconst entradas = $('Ao ser chamado').all();\nreturn $input.all().map((r, i) => {\n  const ctx = entradas[i].json;\n  const p = ctx.proximo || {};\n  const j = r.json || {};\n  const res = j.statusCode !== undefined\n    ? { status: j.statusCode, body: j.body === undefined || j.body === '' ? null : j.body }\n    : { status: 0, body: { code: 'REDE', message: String((j.error && j.error.message) || JSON.stringify(j)).slice(0, 300) } };\n  const { proximo, ...resto } = ctx;\n  return { json: { ...resto, resultados: { ...(ctx.resultados || {}), [p.chave || p.fn]: res }, passos: (ctx.passos || 0) + 1 } };\n});\n"
+        "jsCode": "// Junta a resposta da RPC ao contexto que chegou, em resultados[chave].\n// O nó HTTP recebe a resposta como texto: o Supabase devolve valor solto\n// (\"uuid\", true) ou corpo vazio (função void), que o modo JSON do N8n recusa.\n// Conflito de horário chega como HTTP 400 com body.code = \"23P01\":\n// quem decide é quem chamou, sempre pelo code.\nconst entradas = $('Ao ser chamado').all();\nconst ler = (t) => {\n  if (t === undefined || t === null) return null;\n  if (typeof t !== 'string') return t;\n  if (t.trim() === '') return null;\n  try { return JSON.parse(t); } catch (e) { return t; }\n};\nreturn $input.all().map((r, i) => {\n  const ctx = entradas[i].json;\n  const p = ctx.proximo || {};\n  const j = r.json || {};\n  const res = j.statusCode !== undefined\n    ? { status: j.statusCode, body: ler(j.body !== undefined ? j.body : j.data) }\n    : { status: 0, body: { code: 'REDE', message: String((j.error && j.error.message) || JSON.stringify(j)).slice(0, 300) } };\n  const { proximo, ...resto } = ctx;\n  return { json: { ...resto, resultados: { ...(ctx.resultados || {}), [p.chave || p.fn]: res }, passos: (ctx.passos || 0) + 1 } };\n});\n"
       },
-      "id": "6146a62c-ea7e-4515-b048-c39b6420f8a5",
+      "id": "59153b01-b4db-4833-86af-1f186d0325c3",
       "name": "Guardar resultado",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -68,8 +69,8 @@
         "height": 240,
         "width": 520
       },
-      "id": "99e57065-833c-40f1-a2a2-da4685876760",
-      "name": "Nota a8e7",
+      "id": "f3f65d5e-3ab3-44e6-88be-4c62961b71ff",
+      "name": "Nota 9f5d",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
