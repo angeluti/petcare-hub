@@ -469,7 +469,7 @@ return [{ json: { email: {
     {
       parameters: {
         public: true, mode: 'hostedChat', authentication: 'basicAuth',
-        initialMessages: 'Canal de teste do bot PetCare. Você é um tutor escrevendo para o Pet Feliz (TESTE).\nMande "oi" para começar ou "#ajuda" para ver os comandos.',
+        initialMessages: 'Canal de teste do bot PetCare. Você é um tutor escrevendo para o Pet Feliz.\nMande "oi" para começar ou "#ajuda" para ver os comandos.',
         options: { responseMode: 'responseNode', title: 'Bot PetCare · teste', subtitle: 'Conversa com o mesmo motor do WhatsApp', inputPlaceholder: 'Escreva como o tutor…', loadPreviousSession: 'notSupported' },
       },
       id: id(), name: 'Chat de teste', type: '@n8n/n8n-nodes-langchain.chatTrigger', typeVersion: 1.1,
@@ -477,7 +477,7 @@ return [{ json: { email: {
     },
     code('Normalizar chat', [220, 0], `
 // Pet shop do teste: precisa ter bot_config.canal = 'teste' (arquivo 14).
-const SLUG = 'pet-feliz-teste';
+const SLUG = 'pet-feliz';
 
 const AJUDA = [
   'Comandos do canal de teste:',
