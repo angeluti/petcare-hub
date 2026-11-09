@@ -11,6 +11,7 @@ import { ESPECIES, PORTES, linkWhatsApp, normalizar, telefone } from '../lib/for
 import type { PetVinculo, TutorVinculo } from '../lib/tipos';
 import { Campo, Carregando, Modal, Vazio, useAvisos } from '../componentes/ui';
 import { FormPet, FormTutor } from '../componentes/Cadastro';
+import { WhatsappTutor } from '../componentes/WhatsappTutor';
 
 export function Clientes() {
   const { petshop } = usePetshop();
@@ -105,7 +106,7 @@ function FichaTutor({ tutor, pets, aoFechar }: { tutor: TutorVinculo; pets: PetV
   const avisar = useAvisos();
   const [f, setF] = useState({
     nome: tutor.nome, email: tutor.email ?? '', endereco: tutor.endereco ?? '',
-    observacoes: tutor.observacoes ?? '', aceita_mensagens: tutor.aceita_mensagens,
+    observacoes: tutor.observacoes ?? '',
   });
   const [petEditando, setPetEditando] = useState<string | null>(null);
   const [novoPet, setNovoPet] = useState(false);
@@ -122,8 +123,6 @@ function FichaTutor({ tutor, pets, aoFechar }: { tutor: TutorVinculo; pets: PetV
         email: f.email.trim() || null,
         endereco: f.endereco.trim() || null,
         observacoes: f.observacoes.trim() || null,
-        aceita_mensagens: f.aceita_mensagens,
-        opt_out_em: f.aceita_mensagens ? null : new Date().toISOString(),
       }).eq('id', tutor.id));
       await qc.invalidateQueries({ queryKey: [petshop.id, 'tutores'] });
       avisar('Tutor atualizado.');
@@ -153,15 +152,13 @@ function FichaTutor({ tutor, pets, aoFechar }: { tutor: TutorVinculo; pets: PetV
           <Campo rotulo="Observações (internas)" largo>
             <textarea rows={2} value={f.observacoes} onChange={(e) => setF({ ...f, observacoes: e.target.value })} />
           </Campo>
-          <label className="check">
-            <input type="checkbox" checked={f.aceita_mensagens} onChange={(e) => setF({ ...f, aceita_mensagens: e.target.checked })} />
-            Aceita mensagens automáticas (lembretes)
-          </label>
           {erro && <p className="erro-texto">{erro}</p>}
           <div className="acoes-linha">
             <button className="btn primario" disabled={salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar tutor'}</button>
           </div>
         </section>
+
+        <WhatsappTutor tutor={tutor} />
 
         <section>
           <h3>Pets</h3>

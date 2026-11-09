@@ -10,12 +10,13 @@ interface ItemMenu { to: string; rotulo: string; icone: string; exige?: string; 
 export const MENU: ItemMenu[] = [
   { to: '/agenda', rotulo: 'Agenda', icone: '▦', exige: 'spa.agenda' },
   { to: '/clientes', rotulo: 'Tutores e pets', icone: '◉', exige: 'spa.agenda' },
+  { to: '/conversas', rotulo: 'Atendimento humano', icone: '✆', exige: 'spa.bot' },
+  { to: '/relatorios', rotulo: 'Relatórios', icone: '▤', exige: 'spa.relatorios', soConfig: true },
   { to: '/configuracao', rotulo: 'Configuração', icone: '⚙', soConfig: true },
 ];
 
 // Ligadas no plano, mas ainda não construídas no painel: aparecem como "em breve".
 const EM_BREVE: { rotulo: string; exige: string }[] = [
-  { rotulo: 'Relatórios', exige: 'spa.relatorios' },
   { rotulo: 'Caixa', exige: 'administracao.caixa' },
   { rotulo: 'Estoque', exige: 'administracao.estoque' },
   { rotulo: 'Compras', exige: 'administracao.compras' },

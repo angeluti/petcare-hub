@@ -6,6 +6,8 @@ import { ConfirmarLink, Login, RedefinirSenha } from './paginas/Login';
 import { Agenda } from './paginas/Agenda';
 import { Clientes } from './paginas/Clientes';
 import { Configuracao } from './paginas/Configuracao';
+import { Conversas } from './paginas/Conversas';
+import { Relatorios } from './paginas/Relatorios';
 
 export function App() {
   const { sessao, carregando, definindoSenha } = useSessao();
@@ -45,6 +47,8 @@ function Rotas() {
       <Route element={<Layout />}>
         {tem('spa.agenda') && <Route path="/agenda" element={<Agenda />} />}
         {tem('spa.agenda') && <Route path="/clientes" element={<Clientes />} />}
+        {tem('spa.bot') && <Route path="/conversas" element={<Conversas />} />}
+        {tem('spa.relatorios') && podeConfigurar && <Route path="/relatorios" element={<Relatorios />} />}
         {podeConfigurar && <Route path="/configuracao" element={<Configuracao />} />}
         <Route path="*" element={<Navigate to={inicial} replace />} />
       </Route>

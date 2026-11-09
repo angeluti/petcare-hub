@@ -55,9 +55,14 @@ export async function reservar(r: Reserva) {
   );
 }
 
-export async function mudarStatus(ag: AgendamentoLista, status: StatusAgendamento, motivo?: string) {
-  const patch: { status: StatusAgendamento; motivo_cancelamento?: string | null } = { status };
-  if (status === 'cancelado') patch.motivo_cancelamento = motivo?.trim() || null;
+export async function mudarStatus(
+  ag: AgendamentoLista, status: StatusAgendamento, motivo?: string, canceladoPor?: 'tutor' | 'petshop',
+) {
+  const patch: { status: StatusAgendamento; motivo_cancelamento?: string | null; cancelado_por?: 'tutor' | 'petshop' } = { status };
+  if (status === 'cancelado') {
+    patch.motivo_cancelamento = motivo?.trim() || null;
+    if (canceladoPor) patch.cancelado_por = canceladoPor; // sem escolha, o banco marca 'petshop'
+  }
   dado(await supabase.from('agendamentos').update(patch).eq('id', ag.id));
 }
 
@@ -80,4 +85,22 @@ export async function checkin(ag: AgendamentoLista) {
 
 export async function checkout(ag: AgendamentoLista, pagamentos: { forma: string; valor: number }[], fiado: boolean) {
   dado(await supabase.rpc('fazer_checkout', { p_agendamento: ag.id, p_pagamentos: pagamentos, p_fiado: fiado }));
+}
+
+// ------------------------------------------------------------ Rodada D
+
+/** BT-09 · pausa o bot para um telefone (agora + pausa_humana_horas). */
+export async function pausarBot(petshopId: string, telefone: string) {
+  dado(await supabase.rpc('pausar_bot_tutor', { p_petshop: petshopId, p_telefone: telefone }));
+}
+
+/** BT-09 · devolve a conversa ao bot (estado idle). */
+export async function devolverBot(conversaId: string) {
+  dado(await supabase.rpc('bot_devolver', { p_conversa: conversaId }));
+}
+
+/** TP-12 · liga/desliga mensagens automáticas a pedido do tutor no balcão.
+ *  O banco registra quem e quando (trigger do arquivo 17). */
+export async function definirMensagens(vinculoId: string, aceita: boolean) {
+  dado(await supabase.from('tutor_petshop').update({ aceita_mensagens: aceita }).eq('id', vinculoId));
 }

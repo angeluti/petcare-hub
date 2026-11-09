@@ -89,7 +89,9 @@ export function DetalheAgendamento({ ag, bloqueio, aoFechar }: { ag: Agendamento
               <li className="total"><span>Total</span><span>{moeda(ag.valor_total)}</span></li>
             </ul>
           </dd>
-          {ag.motivo_cancelamento && (<><dt>Motivo</dt><dd>{ag.motivo_cancelamento}</dd></>)}
+          {ag.status === 'cancelado' && (
+            <><dt>Cancelado</dt><dd>{ag.cancelado_por === 'tutor' ? 'a pedido do tutor' : ag.cancelado_por === 'petshop' ? 'pelo pet shop' : '—'}{ag.motivo_cancelamento ? ` · ${ag.motivo_cancelamento}` : ''}</dd></>
+          )}
         </dl>
 
         {ag.status !== 'entregue' && (
@@ -121,7 +123,7 @@ export function DetalheAgendamento({ ag, bloqueio, aoFechar }: { ag: Agendamento
 
         {painel === 'cancelar' && (
           <Cancelar ocupado={ocupado} aoVoltar={() => setPainel(null)}
-            aoConfirmar={(motivo) => executar(() => mudarStatus(ag, 'cancelado', motivo), 'Agendamento cancelado.')} />
+            aoConfirmar={(motivo, quem) => executar(() => mudarStatus(ag, 'cancelado', motivo, quem), 'Agendamento cancelado.')} />
         )}
         {painel === 'remarcar' && (
           <Remarcar ag={ag} podeEncaixar={podeConfigurar} aoVoltar={() => setPainel(null)}
@@ -142,16 +144,23 @@ export function DetalheAgendamento({ ag, bloqueio, aoFechar }: { ag: Agendamento
   );
 }
 
-function Cancelar(props: { ocupado: boolean; aoVoltar: () => void; aoConfirmar: (motivo: string) => void }) {
+function Cancelar(props: { ocupado: boolean; aoVoltar: () => void; aoConfirmar: (motivo: string, quem: 'tutor' | 'petshop') => void }) {
   const [motivo, setMotivo] = useState('');
+  const [quem, setQuem] = useState<'tutor' | 'petshop'>('tutor');
   return (
     <div className="subform">
+      <Campo rotulo="Quem pediu o cancelamento" largo dica="Entra no relatório de cancelamentos (tutor x pet shop)">
+        <div className="segmentado pequeno">
+          <button type="button" className={quem === 'tutor' ? 'ativo' : ''} onClick={() => setQuem('tutor')}>O tutor</button>
+          <button type="button" className={quem === 'petshop' ? 'ativo' : ''} onClick={() => setQuem('petshop')}>O pet shop</button>
+        </div>
+      </Campo>
       <Campo rotulo="Motivo do cancelamento (opcional)" largo>
         <input value={motivo} onChange={(e) => setMotivo(e.target.value)} autoFocus placeholder="Ex.: tutor desmarcou por telefone" />
       </Campo>
       <div className="acoes-linha">
         <button className="btn" onClick={props.aoVoltar}>Voltar</button>
-        <button className="btn perigo" disabled={props.ocupado} onClick={() => props.aoConfirmar(motivo)}>Cancelar agendamento</button>
+        <button className="btn perigo" disabled={props.ocupado} onClick={() => props.aoConfirmar(motivo, quem)}>Cancelar agendamento</button>
       </div>
     </div>
   );

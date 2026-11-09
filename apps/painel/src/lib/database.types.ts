@@ -78,6 +78,7 @@ export type Database = {
         Row: {
           atualizado_em: string
           cancelado_em: string | null
+          cancelado_por: string | null
           checkin_em: string | null
           checkout_em: string | null
           criado_em: string
@@ -102,6 +103,7 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           cancelado_em?: string | null
+          cancelado_por?: string | null
           checkin_em?: string | null
           checkout_em?: string | null
           criado_em?: string
@@ -126,6 +128,7 @@ export type Database = {
         Update: {
           atualizado_em?: string
           cancelado_em?: string | null
+          cancelado_por?: string | null
           checkin_em?: string | null
           checkout_em?: string | null
           criado_em?: string
@@ -231,6 +234,7 @@ export type Database = {
           ativo: boolean
           atualizado_em: string
           canal: string
+          conexao_alertado_em: string | null
           conexao_status: string
           conexao_verificada_em: string | null
           limite_msgs_auto_semana: number
@@ -240,6 +244,7 @@ export type Database = {
           pausa_humana_horas: number
           petshop_id: string
           saudacao: string
+          telefone_avisos: string | null
           timeout_conversa_horas: number
           token_secret_id: string | null
           tom: string
@@ -249,6 +254,7 @@ export type Database = {
           ativo?: boolean
           atualizado_em?: string
           canal?: string
+          conexao_alertado_em?: string | null
           conexao_status?: string
           conexao_verificada_em?: string | null
           limite_msgs_auto_semana?: number
@@ -258,6 +264,7 @@ export type Database = {
           pausa_humana_horas?: number
           petshop_id: string
           saudacao?: string
+          telefone_avisos?: string | null
           timeout_conversa_horas?: number
           token_secret_id?: string | null
           tom?: string
@@ -267,6 +274,7 @@ export type Database = {
           ativo?: boolean
           atualizado_em?: string
           canal?: string
+          conexao_alertado_em?: string | null
           conexao_status?: string
           conexao_verificada_em?: string | null
           limite_msgs_auto_semana?: number
@@ -276,6 +284,7 @@ export type Database = {
           pausa_humana_horas?: number
           petshop_id?: string
           saudacao?: string
+          telefone_avisos?: string | null
           timeout_conversa_horas?: number
           token_secret_id?: string | null
           tom?: string
@@ -297,6 +306,8 @@ export type Database = {
           dados_temp: Json
           estado: string
           humano_ate: string | null
+          humano_desde: string | null
+          humano_por: string | null
           id: string
           petshop_id: string
           telefone: string
@@ -308,6 +319,8 @@ export type Database = {
           dados_temp?: Json
           estado?: string
           humano_ate?: string | null
+          humano_desde?: string | null
+          humano_por?: string | null
           id?: string
           petshop_id: string
           telefone: string
@@ -319,6 +332,8 @@ export type Database = {
           dados_temp?: Json
           estado?: string
           humano_ate?: string | null
+          humano_desde?: string | null
+          humano_por?: string | null
           id?: string
           petshop_id?: string
           telefone?: string
@@ -575,6 +590,47 @@ export type Database = {
             columns: ["requisicao_id"]
             isOneToOne: false
             referencedRelation: "requisicoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fluxo_erros: {
+        Row: {
+          criado_em: string
+          execucao_id: string | null
+          id: string
+          mensagem: string
+          no: string | null
+          petshop_id: string | null
+          url_execucao: string | null
+          workflow: string
+        }
+        Insert: {
+          criado_em?: string
+          execucao_id?: string | null
+          id?: string
+          mensagem: string
+          no?: string | null
+          petshop_id?: string | null
+          url_execucao?: string | null
+          workflow: string
+        }
+        Update: {
+          criado_em?: string
+          execucao_id?: string | null
+          id?: string
+          mensagem?: string
+          no?: string | null
+          petshop_id?: string | null
+          url_execucao?: string | null
+          workflow?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fluxo_erros_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
             referencedColumns: ["id"]
           },
         ]
@@ -1847,15 +1903,46 @@ export type Database = {
           },
         ]
       }
+      termos_consentimento: {
+        Row: {
+          canal: string
+          criado_em: string
+          escopo: string
+          texto: string
+          versao: string
+          vigente: boolean
+        }
+        Insert: {
+          canal?: string
+          criado_em?: string
+          escopo: string
+          texto: string
+          versao: string
+          vigente?: boolean
+        }
+        Update: {
+          canal?: string
+          criado_em?: string
+          escopo?: string
+          texto?: string
+          versao?: string
+          vigente?: boolean
+        }
+        Relationships: []
+      }
       tutor_petshop: {
         Row: {
           aceita_mensagens: boolean
           ativo: boolean
           atualizado_em: string
+          consentimento_perguntado_em: string | null
           criado_em: string
           email: string | null
           endereco: string | null
           id: string
+          mensagens_alterado_em: string | null
+          mensagens_alterado_origem: string | null
+          mensagens_alterado_por: string | null
           nome: string
           observacoes: string | null
           opt_out_em: string | null
@@ -1867,10 +1954,14 @@ export type Database = {
           aceita_mensagens?: boolean
           ativo?: boolean
           atualizado_em?: string
+          consentimento_perguntado_em?: string | null
           criado_em?: string
           email?: string | null
           endereco?: string | null
           id?: string
+          mensagens_alterado_em?: string | null
+          mensagens_alterado_origem?: string | null
+          mensagens_alterado_por?: string | null
           nome: string
           observacoes?: string | null
           opt_out_em?: string | null
@@ -1882,10 +1973,14 @@ export type Database = {
           aceita_mensagens?: boolean
           ativo?: boolean
           atualizado_em?: string
+          consentimento_perguntado_em?: string | null
           criado_em?: string
           email?: string | null
           endereco?: string | null
           id?: string
+          mensagens_alterado_em?: string | null
+          mensagens_alterado_origem?: string | null
+          mensagens_alterado_por?: string | null
           nome?: string
           observacoes?: string | null
           opt_out_em?: string | null
@@ -1942,6 +2037,15 @@ export type Database = {
         }
         Returns: string
       }
+      bot_aberto_agora: { Args: { p_petshop: string }; Returns: Json }
+      bot_agendamentos_em_bloqueio: {
+        Args: { p_petshop?: string }
+        Returns: {
+          itens: Json
+          petshop_id: string
+          telefone_avisos: string
+        }[]
+      }
       bot_agendamentos_tutor: {
         Args: { p_petshop: string; p_tutor: string }
         Returns: Json
@@ -1954,11 +2058,40 @@ export type Database = {
         Args: { p_agendamento: string; p_petshop: string; p_tutor: string }
         Returns: boolean
       }
+      bot_conexao_evento: {
+        Args: { p_conectado: boolean; p_detalhe?: string; p_instance: string }
+        Returns: Json
+      }
+      bot_consentimento_pendente: {
+        Args: { p_petshop: string; p_tutor: string }
+        Returns: Json
+      }
+      bot_definir_mensagens: {
+        Args: { p_aceita: boolean; p_petshop: string; p_telefone: string }
+        Returns: boolean
+      }
       bot_devolver: { Args: { p_conversa: string }; Returns: undefined }
       bot_entrada: {
         Args: { p_petshop: string; p_telefone: string }
         Returns: Json
       }
+      bot_envio: { Args: { p_petshop: string }; Returns: Json }
+      bot_instancias_monitoradas: {
+        Args: never
+        Returns: {
+          ativo: boolean
+          petshop: string
+          petshop_id: string
+          token: string
+          zapi_instance_id: string
+        }[]
+      }
+      bot_lembrete_desmarcar: {
+        Args: { p_agendamento: string }
+        Returns: undefined
+      }
+      bot_lembrete_marcar: { Args: { p_agendamento: string }; Returns: boolean }
+      bot_nome_compartilhado: { Args: { p_tutor: string }; Returns: string }
       bot_pausar_por_humano: {
         Args: { p_petshop: string; p_telefone: string }
         Returns: undefined
@@ -1968,9 +2101,62 @@ export type Database = {
         Args: { p_meta_phone_id?: string; p_zapi_instance?: string }
         Returns: string
       }
+      bot_petshop_teste: { Args: { p_slug: string }; Returns: string }
+      bot_registrar_consentimento: {
+        Args: {
+          p_aceite: boolean
+          p_evidencia?: Json
+          p_petshop: string
+          p_tutor: string
+          p_versao: string
+        }
+        Returns: string
+      }
+      bot_registrar_erro: {
+        Args: {
+          p_execucao?: string
+          p_mensagem: string
+          p_no: string
+          p_petshop?: string
+          p_url?: string
+          p_workflow: string
+        }
+        Returns: Json
+      }
+      bot_registrar_fromme: {
+        Args: {
+          p_from_api?: boolean
+          p_message_id: string
+          p_petshop: string
+          p_telefone: string
+        }
+        Returns: string
+      }
+      bot_registrar_mensagem: {
+        Args: {
+          p_agendamento?: string
+          p_direcao: string
+          p_erro?: string
+          p_id_externo?: string
+          p_petshop: string
+          p_status?: string
+          p_telefone: string
+          p_tipo: string
+        }
+        Returns: string
+      }
+      bot_responder_lembrete: {
+        Args: { p_petshop: string; p_resposta: string; p_telefone: string }
+        Returns: Json
+      }
+      bot_revogar_consentimento: { Args: { p_tutor: string }; Returns: boolean }
       bot_salvar_estado: {
         Args: { p_conversa: string; p_dados_temp?: Json; p_estado: string }
         Returns: undefined
+      }
+      bot_servicos: {
+        Args: { p_petshop: string; p_porte: string }
+        Returns: Json
       }
       bot_token: { Args: { p_petshop: string }; Returns: string }
       bot_vincular_pet_compartilhado: {
@@ -1998,11 +2184,26 @@ export type Database = {
         }
         Returns: string
       }
+      conversas_pausadas: {
+        Args: { p_petshop: string }
+        Returns: {
+          conversa_id: string
+          estado: string
+          humano_ate: string
+          humano_desde: string
+          pausado_por_painel: boolean
+          telefone: string
+          tutor_id: string
+          tutor_nome: string
+          vencida: boolean
+        }[]
+      }
       fazer_checkin: {
         Args: { p_agendamento: string }
         Returns: {
           atualizado_em: string
           cancelado_em: string | null
+          cancelado_por: string | null
           checkin_em: string | null
           checkout_em: string | null
           criado_em: string
@@ -2041,6 +2242,7 @@ export type Database = {
         Returns: {
           atualizado_em: string
           cancelado_em: string | null
+          cancelado_por: string | null
           checkin_em: string | null
           checkout_em: string | null
           criado_em: string
@@ -2115,6 +2317,28 @@ export type Database = {
         }[]
       }
       minhas_funcionalidades: { Args: { p_petshop: string }; Returns: string[] }
+      pausar_bot_tutor: {
+        Args: { p_petshop: string; p_telefone: string }
+        Returns: {
+          criado_em: string
+          dados_temp: Json
+          estado: string
+          humano_ate: string | null
+          humano_desde: string | null
+          humano_por: string | null
+          id: string
+          petshop_id: string
+          telefone: string
+          tutor_id: string | null
+          ultimo_contato: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bot_conversas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       proximos_dias_com_vaga: {
         Args: {
           p_dias?: number
@@ -2127,6 +2351,10 @@ export type Database = {
           dia_semana: string
           horarios: number
         }[]
+      }
+      relatorio_poc: {
+        Args: { p_ate: string; p_de: string; p_petshop: string }
+        Returns: Json
       }
       reservar_agendamento: {
         Args: {
@@ -2144,6 +2372,7 @@ export type Database = {
         Returns: {
           atualizado_em: string
           cancelado_em: string | null
+          cancelado_por: string | null
           checkin_em: string | null
           checkout_em: string | null
           criado_em: string

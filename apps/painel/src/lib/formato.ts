@@ -18,8 +18,17 @@ export function telefone(e164: string | null | undefined): string {
 export function normalizarTelefone(txt: string): string | null {
   let d = txt.replace(/\D/g, '');
   if (!d) return null;
-  if (d.length === 10 || d.length === 11) d = '55' + d;
+  // Com "+" na frente, o número já vem com o país: não acrescenta o 55.
+  if (!txt.trim().startsWith('+') && (d.length === 10 || d.length === 11)) d = '55' + d;
   return '+' + d;
+}
+
+// Celular que recebe WhatsApp (mesma regra do arquivo 18):
+// Brasil +55 DDD 9XXXXXXXX; outros países 10 a 15 dígitos.
+export function celularValido(e164: string | null): boolean {
+  if (!e164) return false;
+  if (e164.startsWith('+55')) return /^\+55[1-9]{2}9\d{8}$/.test(e164);
+  return /^\+[1-9]\d{9,14}$/.test(e164);
 }
 
 export function linkWhatsApp(e164: string): string {

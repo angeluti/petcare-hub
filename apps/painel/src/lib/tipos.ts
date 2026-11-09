@@ -78,6 +78,7 @@ export interface AgendamentoLista {
   pagamento_status: 'pendente' | 'parcial' | 'pago' | 'fiado';
   observacoes: string | null;
   motivo_cancelamento: string | null;
+  cancelado_por: 'tutor' | 'petshop' | null;
   recurso_id: string;
   pet_id: string;
   tutor_id: string;
@@ -123,8 +124,70 @@ export interface TutorVinculo {
   endereco: string | null;
   observacoes: string | null;
   aceita_mensagens: boolean;
+  opt_out_em: string | null;
+  /** quem ligou/desligou as mensagens por último: 'bot' (tutor pelo WhatsApp) ou 'painel' (a pedido do tutor no balcão) */
+  mensagens_alterado_em: string | null;
+  mensagens_alterado_por: string | null;
+  mensagens_alterado_origem: 'bot' | 'painel' | null;
   origem: string;
   tutores: { telefone: string } | null;
+}
+
+export interface Consentimento {
+  id: string;
+  escopo: 'compartilhar_dados_pet' | 'compartilhar_saude';
+  versao_termo: string;
+  canal: string;
+  concedido_em: string;
+  revogado_em: string | null;
+}
+
+export interface ConversaPausada {
+  conversa_id: string;
+  telefone: string;
+  tutor_id: string | null;
+  tutor_nome: string | null;
+  estado: 'humano' | 'bloqueado';
+  humano_desde: string | null;
+  humano_ate: string | null;
+  pausado_por_painel: boolean;
+  vencida: boolean;
+}
+
+export interface ConversaBot {
+  id: string;
+  estado: string;
+  humano_ate: string | null;
+  humano_desde: string | null;
+  ultimo_contato: string;
+}
+
+/** Linha do relatório (totais do período ou uma semana). */
+export interface LinhaRelatorio {
+  semana?: string;
+  total: number;
+  cancelados: number;
+  cancel_tutor: number;
+  cancel_tutor_bot: number;
+  cancel_petshop: number;
+  nao_cancelados: number;
+  pelo_bot: number;
+  entregues: number;
+  no_show: number;
+  sem_desfecho: number;
+  pct_bot: number | null;
+  pct_no_show: number | null;
+  pct_cancelamento: number | null;
+}
+
+export interface RelatorioPoc {
+  de: string;
+  ate: string;
+  fuso: string;
+  bot_ativo: boolean;
+  meta_pct_bot: number;
+  totais: LinhaRelatorio;
+  semanas: LinhaRelatorio[];
 }
 
 export interface PetVinculo {
@@ -151,4 +214,5 @@ export interface BotConfig {
   ativo: boolean;
   canal: string;
   conexao_status: string;
+  telefone_avisos: string | null;
 }

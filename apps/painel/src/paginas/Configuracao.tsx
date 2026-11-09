@@ -5,7 +5,7 @@ import { usePetshop } from '../contexto/PetshopAtual';
 import { useBotConfig, useHorariosFuncionamento, useRecursos, useServicos } from '../lib/consultas';
 import { supabase, dado } from '../lib/supabase';
 import { mensagemDeErro } from '../lib/erros';
-import { PORTES, moeda } from '../lib/formato';
+import { PORTES, celularValido, moeda, normalizarTelefone, telefone } from '../lib/formato';
 import { DIAS_SEMANA } from '../lib/tempo';
 import type { HorarioFuncionamento, Recurso, Servico } from '../lib/tipos';
 import { Campo, Carregando, useAvisos } from '../componentes/ui';
@@ -404,11 +404,15 @@ function AbaBot() {
   const [nome, setNome] = useState('');
   const [saudacao, setSaudacao] = useState('');
   const [pausa, setPausa] = useState('4');
+  const [avisos, setAvisos] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    if (q.data) { setNome(q.data.nome_bot); setSaudacao(q.data.saudacao); setPausa(String(q.data.pausa_humana_horas)); }
+    if (q.data) {
+      setNome(q.data.nome_bot); setSaudacao(q.data.saudacao); setPausa(String(q.data.pausa_humana_horas));
+      setAvisos(q.data.telefone_avisos ? telefone(q.data.telefone_avisos) : '');
+    }
   }, [q.data]);
 
   if (q.isLoading) return <Carregando />;
@@ -421,10 +425,16 @@ function AbaBot() {
     if (!nome.trim()) return setErro('Dê um nome ao bot.');
     const h = Number(pausa);
     if (!Number.isInteger(h) || h < 1 || h > 72) return setErro('Pausa entre 1 e 72 horas.');
+    let celAvisos: string | null = null;
+    if (avisos.trim()) {
+      celAvisos = normalizarTelefone(avisos);
+      if (!celularValido(celAvisos)) return setErro('Celular para avisos inválido. Use DDD + celular com 9 dígitos, ex.: (19) 99123-4567.');
+      if (celAvisos === petshop.telefone_wp) return setErro('O celular para avisos precisa ser diferente do WhatsApp do pet shop (o do bot).');
+    }
     setSalvando(true);
     try {
       dado(await supabase.from('bot_config')
-        .update({ nome_bot: nome.trim(), saudacao: saudacao.trim(), pausa_humana_horas: h })
+        .update({ nome_bot: nome.trim(), saudacao: saudacao.trim(), pausa_humana_horas: h, telefone_avisos: celAvisos })
         .eq('petshop_id', petshop.id));
       await qc.invalidateQueries({ queryKey: [petshop.id, 'bot_config'] });
       avisar('Bot atualizado.');
@@ -449,6 +459,13 @@ function AbaBot() {
           <input inputMode="numeric" value={pausa} onChange={(e) => setPausa(e.target.value)} />
         </Campo>
       </div>
+      <Campo
+        rotulo="Celular para avisos"
+        largo
+        dica="Seu celular pessoal, diferente do WhatsApp do pet shop. Recebe os avisos do bot: tutor pedindo atendente, cancelamento e agendamento em período bloqueado."
+      >
+        <input id="bot-avisos" inputMode="tel" value={avisos} onChange={(e) => setAvisos(e.target.value)} placeholder="(19) 99123-4567" />
+      </Campo>
       <Campo rotulo="Saudação" largo dica="Use {bot} e {petshop} para inserir os nomes.">
         <textarea rows={2} value={saudacao} onChange={(e) => setSaudacao(e.target.value)} />
       </Campo>

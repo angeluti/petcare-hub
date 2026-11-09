@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase, dado } from './supabase';
 import { faixaDoDia, type Dia } from './tempo';
 import type {
-  AgendamentoLista, Bloqueio, Membro, BotConfig, HorarioDisponivel, HorarioFuncionamento, PetVinculo, Recurso, Servico, TutorVinculo,
+  AgendamentoLista, Bloqueio, Consentimento, ConversaBot, ConversaPausada, Membro, RelatorioPoc, BotConfig, HorarioDisponivel, HorarioFuncionamento, PetVinculo, Recurso, Servico, TutorVinculo,
 } from './tipos';
 
 export const SELECT_AGENDAMENTO = `
-  id, inicio, fim, status, origem, encaixe, valor_total, pagamento_status, observacoes, motivo_cancelamento,
+  id, inicio, fim, status, origem, encaixe, valor_total, pagamento_status, observacoes, motivo_cancelamento, cancelado_por,
   recurso_id, pet_id, tutor_id,
   recursos ( nome, cor ),
   pet_petshop ( temperamento, pets ( nome, porte, raca, especie ) ),
@@ -88,7 +88,7 @@ export function useTutores(petshopId: string) {
       dado<TutorVinculo[]>(
         await supabase
           .from('tutor_petshop')
-          .select('id, tutor_id, nome, email, endereco, observacoes, aceita_mensagens, origem, tutores ( telefone )')
+          .select('id, tutor_id, nome, email, endereco, observacoes, aceita_mensagens, opt_out_em, mensagens_alterado_em, mensagens_alterado_por, mensagens_alterado_origem, origem, tutores ( telefone )')
           .eq('petshop_id', petshopId)
           .eq('ativo', true)
           .order('nome'),
@@ -118,7 +118,7 @@ export function useBotConfig(petshopId: string, ligado: boolean) {
       dado<BotConfig | null>(
         await supabase
           .from('bot_config')
-          .select('petshop_id, nome_bot, saudacao, pausa_humana_horas, ativo, canal, conexao_status')
+          .select('petshop_id, nome_bot, saudacao, pausa_humana_horas, ativo, canal, conexao_status, telefone_avisos')
           .eq('petshop_id', petshopId)
           .maybeSingle(),
       ),
@@ -217,5 +217,60 @@ export function useMembros(petshopId: string, habilitado: boolean) {
           .eq('petshop_id', petshopId)
           .order('criado_em'),
       ),
+  });
+}
+
+// ------------------------------------------------------------ Rodada D
+
+/** BT-09 · conversas com o bot pausado (atendimento humano) ou bloqueado. */
+export function useConversasPausadas(petshopId: string, habilitado = true) {
+  return useQuery({
+    queryKey: [petshopId, 'conversas_pausadas'],
+    enabled: habilitado,
+    refetchInterval: 30_000,
+    queryFn: async () =>
+      dado<ConversaPausada[]>(await supabase.rpc('conversas_pausadas', { p_petshop: petshopId })),
+  });
+}
+
+/** Conversa do bot com um telefone (ficha do tutor). */
+export function useConversaDoTelefone(petshopId: string, telefone: string | null | undefined, habilitado = true) {
+  return useQuery({
+    queryKey: [petshopId, 'conversa', telefone],
+    enabled: habilitado && !!telefone,
+    queryFn: async () =>
+      dado<ConversaBot | null>(
+        await supabase
+          .from('bot_conversas')
+          .select('id, estado, humano_ate, humano_desde, ultimo_contato')
+          .eq('petshop_id', petshopId)
+          .eq('telefone', telefone as string)
+          .maybeSingle(),
+      ),
+  });
+}
+
+/** TP-15 · consentimentos do tutor (a RLS só mostra para quem tem vínculo). */
+export function useConsentimentos(petshopId: string, tutorId: string) {
+  return useQuery({
+    queryKey: [petshopId, 'consentimentos', tutorId],
+    queryFn: async () =>
+      dado<Consentimento[]>(
+        await supabase
+          .from('consentimentos')
+          .select('id, escopo, versao_termo, canal, concedido_em, revogado_em')
+          .eq('tutor_id', tutorId)
+          .order('concedido_em', { ascending: false }),
+      ),
+  });
+}
+
+/** RL-02 / RL-03 · relatório da POC (RPC do arquivo 17). */
+export function useRelatorio(petshopId: string, de: string, ate: string) {
+  return useQuery({
+    queryKey: [petshopId, 'relatorio_poc', de, ate],
+    enabled: !!de && !!ate && de <= ate,
+    queryFn: async () =>
+      dado<RelatorioPoc>(await supabase.rpc('relatorio_poc', { p_petshop: petshopId, p_de: de, p_ate: ate })),
   });
 }
