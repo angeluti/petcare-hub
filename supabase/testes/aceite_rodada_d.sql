@@ -23,8 +23,8 @@ declare
   saida text[] := '{}';
 begin
   perform set_config('plpgsql.check_asserts', 'on', true);
-  select id into u_pf from auth.users where email = 'dono.petfeliz@teste.local';
-  select id into u_pr from auth.users where email = 'dono.petrival@teste.local';
+  select id into u_pf from auth.users where email = 'petfeliz@gmail.com';
+  select id into u_pr from auth.users where email = 'pataamigapetshop@outlook.com';
   select id into ana from public.recursos where petshop_id = pf and nome = 'Ana';
 
   begin

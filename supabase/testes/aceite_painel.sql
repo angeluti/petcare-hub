@@ -20,8 +20,8 @@ declare
   saida text[] := '{}';
 begin
   perform set_config('plpgsql.check_asserts', 'on', true);
-  select id into u_pf from auth.users where email = 'dono.petfeliz@teste.local';
-  select id into u_pr from auth.users where email = 'dono.petrival@teste.local';
+  select id into u_pf from auth.users where email = 'petfeliz@gmail.com';
+  select id into u_pr from auth.users where email = 'pataamigapetshop@outlook.com';
 
   begin
     assert u_pf is not null and u_pr is not null, 'FALHOU A0: usuários de teste não encontrados (rode o arquivo 09)';
