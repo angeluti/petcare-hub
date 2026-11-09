@@ -119,11 +119,15 @@ function montarEnvios(petshop, env, msgs) {
     // Canal de teste: nada sai para o WhatsApp; o workflow devolve o texto no chat.
     return msgs.map((m) => ({ ...m, petshop_id: petshop, canal, phone: String(m.para).replace(/\D/g, '') }));
   }
-  if (canal !== 'zapi' || !env.zapi_instance_id || !env.token) {
-    throw new Error(`Pet shop sem canal configurado (canal ${canal || 'vazio'}, instância ou token no Vault)`);
+  // Evolution (09/11/2026): o N8n autentica com a chave global da credencial; sem token por pet shop.
+  // Z-API: mantida só para o simulador e o canal antigo (instância + token do Vault).
+  const instancia = env && (env.instancia || env.zapi_instance_id);
+  const ok = (canal === 'evolution' && instancia) || (canal === 'zapi' && instancia && env.token);
+  if (!ok) {
+    throw new Error(`Pet shop sem canal configurado (canal ${canal || 'vazio'}, instância ${instancia || 'vazia'})`);
   }
   return msgs.map((m) => ({
-    ...m, petshop_id: petshop, canal, instancia: env.zapi_instance_id, token: env.token,
+    ...m, petshop_id: petshop, canal, instancia, token: canal === 'zapi' ? env.token : undefined,
     phone: String(m.para).replace(/\D/g, ''),
   }));
 }
@@ -169,7 +173,9 @@ function conversar(ctx, rpc) {
   const teste = ev.canal === 'teste';
   const petshop = teste
     ? rpc('petshop', 'bot_petshop_teste', { p_slug: ev.instance_id })
-    : rpc('petshop', 'bot_petshop_por_instancia', { p_zapi_instance: ev.instance_id, p_meta_phone_id: null });
+    : ev.canal === 'evolution'
+      ? rpc('petshop', 'bot_petshop_por_canal', { p_canal: 'evolution', p_instancia: ev.instance_id })
+      : rpc('petshop', 'bot_petshop_por_instancia', { p_zapi_instance: ev.instance_id, p_meta_phone_id: null });
   if (!petshop) {
     return { envios: [], nota: teste
       ? `O pet shop "${ev.instance_id}" não está no canal de teste (bot_config.canal precisa ser 'teste').`

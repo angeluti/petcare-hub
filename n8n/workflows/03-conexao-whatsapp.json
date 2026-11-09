@@ -3,36 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "petcare-hub/zapi-conexao",
-        "responseMode": "onReceived",
-        "options": {}
-      },
-      "id": "720220d8-7409-405c-89d4-40d4a538dadf",
-      "name": "Z-API · conexão",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ],
-      "webhookId": "ddc23ad6-de96-42cd-8278-cf113e3b6a64"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Webhooks \"Ao desconectar\" e \"Ao conectar\" da Z-API.\nconst b = $json.body || {};\nlet conectado = null;\nif (b.type === 'ConnectedCallback' || b.connected === true) conectado = true;\nif (b.type === 'DisconnectedCallback' || b.disconnected === true || b.connected === false) conectado = false;\nif (conectado === null || !b.instanceId) return [];\nreturn [{ json: { resultados: {}, proximo: { chave: 'evento', fn: 'bot_conexao_evento',\n  args: { p_instance: b.instanceId, p_conectado: conectado, p_detalhe: 'webhook ' + (b.type || '') + (b.error ? ': ' + b.error : '') } } } }];\n"
-      },
-      "id": "30387fcd-65fa-4d56-8773-fee51fb6c832",
-      "name": "Interpretar webhook",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        220,
-        0
-      ]
-    },
-    {
-      "parameters": {
         "rule": {
           "interval": [
             {
@@ -42,26 +12,26 @@
           ]
         }
       },
-      "id": "bde432d9-d5d8-49ce-88e7-2ca63efadc1b",
+      "id": "720220d8-7409-405c-89d4-40d4a538dadf",
       "name": "A cada 15 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
         0,
-        240
+        0
       ]
     },
     {
       "parameters": {
         "jsCode": "return [{ json: { resultados: {}, proximo: { chave: 'inst', fn: 'bot_instancias_monitoradas', args: {} } } }];\n"
       },
-      "id": "95924a47-674c-48a9-8644-e3998fa58d75",
+      "id": "ddc23ad6-de96-42cd-8278-cf113e3b6a64",
       "name": "Pedir instâncias",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         220,
-        240
+        0
       ]
     },
     {
@@ -76,32 +46,32 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "d5726014-f298-4efc-8e76-1ef76947b5f7",
+      "id": "30387fcd-65fa-4d56-8773-fee51fb6c832",
       "name": "RPC · instâncias",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
         440,
-        240
+        0
       ]
     },
     {
       "parameters": {
-        "jsCode": "const r = $json.resultados.inst;\nif (!r || r.status !== 200) throw new Error('bot_instancias_monitoradas falhou: ' + JSON.stringify(r));\nreturn (r.body || []).map((x) => ({ json: { inst: x } }));\n"
+        "jsCode": "const r = $json.resultados.inst;\nif (!r || r.status !== 200) throw new Error('bot_instancias_monitoradas falhou: ' + JSON.stringify(r));\nreturn (r.body || []).filter((x) => x.canal === 'evolution' && x.instancia).map((x) => ({ json: { inst: x } }));\n"
       },
-      "id": "467eadc4-c8cb-4d09-8908-1a2c43ccf60f",
+      "id": "bde432d9-d5d8-49ce-88e7-2ca63efadc1b",
       "name": "Um item por instância",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         660,
-        240
+        0
       ]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.z-api.io/instances/{{ $json.inst.zapi_instance_id }}/token/{{ $json.inst.token }}/status",
+        "url": "=http://evolution-api.railway.internal:8080/instance/connectionState/{{ $json.inst.instancia }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -114,33 +84,33 @@
           "timeout": 15000
         }
       },
-      "id": "0e630065-ba7e-450d-85aa-4739f71a3c40",
-      "name": "Z-API · status",
+      "id": "95924a47-674c-48a9-8644-e3998fa58d75",
+      "name": "Evolution · estado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         880,
-        240
+        0
       ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "TROCAR",
-          "name": "Z-API · Client-Token"
+          "name": "evolution global"
         }
       },
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// GET /status da Z-API: { connected, error, smartphoneConnected }.\n// Sem resposta da Z-API não conta como queda (evita alarme falso); o erro vai no detalhe.\nconst insts = $('Um item por instância').all();\nreturn $input.all().flatMap((r, i) => {\n  const x = insts[i].json.inst;\n  const j = r.json || {};\n  if (!(j.statusCode >= 200 && j.statusCode < 300)) return [];\n  const b = j.body || {};\n  const detalhe = [b.error, b.smartphoneConnected === false ? 'celular sem internet' : null].filter(Boolean).join('; ') || null;\n  return [{ json: { resultados: {}, proximo: { chave: 'evento', fn: 'bot_conexao_evento',\n    args: { p_instance: x.zapi_instance_id, p_conectado: b.connected === true, p_detalhe: detalhe } } } }];\n});\n"
+        "jsCode": "// GET /instance/connectionState/{instancia} → { instance: { instanceName, state } }.\n// open = conectado. close ou connecting há 15 min = caído. 404 = a instância não existe\n// mais na Evolution (apagada ou banco perdido): conta como queda.\n// Sem resposta da Evolution (rede, 5xx) não conta como queda: evita alarme falso,\n// e o erro de rede aparece no 04 se repetir.\nconst insts = $('Um item por instância').all();\nreturn $input.all().flatMap((r, i) => {\n  const x = insts[i].json.inst;\n  const j = r.json || {};\n  let conectado = null, detalhe = null;\n  if (j.statusCode === 404) { conectado = false; detalhe = 'instância não encontrada na Evolution'; }\n  else if (j.statusCode >= 200 && j.statusCode < 300) {\n    const b = j.body || {};\n    const estado = (b.instance && b.instance.state) || b.state || '?';\n    conectado = estado === 'open';\n    detalhe = conectado ? null : 'cron: estado ' + estado;\n  }\n  if (conectado === null) return [];\n  return [{ json: { resultados: {}, proximo: { chave: 'evento', fn: 'bot_conexao_evento',\n    args: { p_instance: x.instancia, p_conectado: conectado, p_detalhe: detalhe } } } }];\n});\n"
       },
-      "id": "d60f8fe5-2c74-44a4-840f-a180f4b5f78b",
-      "name": "Interpretar status",
+      "id": "d5726014-f298-4efc-8e76-1ef76947b5f7",
+      "name": "Interpretar estado",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1100,
-        240
+        0
       ]
     },
     {
@@ -155,13 +125,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "85f06b3d-55dd-4a49-880e-34bdcda1595e",
+      "id": "467eadc4-c8cb-4d09-8908-1a2c43ccf60f",
       "name": "RPC · registrar conexão",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
         1320,
-        100
+        0
       ]
     },
     {
@@ -175,7 +145,7 @@
           },
           "conditions": [
             {
-              "id": "503a1ba1-4323-4a7a-8f8e-80a62879fafc",
+              "id": "0e630065-ba7e-450d-85aa-4739f71a3c40",
               "leftValue": "={{ !!($json.resultados.evento.body && ($json.resultados.evento.body.alertar_queda || $json.resultados.evento.body.alertar_volta)) }}",
               "operator": {
                 "type": "boolean",
@@ -189,26 +159,26 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "63600e37-0cae-4657-8b21-8a22c25a8500",
+      "id": "d60f8fe5-2c74-44a4-840f-a180f4b5f78b",
       "name": "Alertar?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
         1540,
-        100
+        0
       ]
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map((it) => {\n  const e = it.json.resultados.evento.body;\n  const queda = e.alertar_queda;\n  return { json: { email: {\n    assunto: queda ? `⚠️ WhatsApp desconectado: ${e.petshop}` : `✅ WhatsApp reconectado: ${e.petshop}`,\n    texto: queda\n      ? `O WhatsApp do pet shop ${e.petshop} está desconectado da Z-API.\\nBot ligado: ${e.bot_ativo ? 'sim' : 'não'}.\\nDetalhe: ${e.detalhe || '-'}\\n\\nO que fazer: abrir a instância no painel da Z-API e ler o QR Code com o celular do pet shop. Enquanto isso, o bot não responde e os lembretes não saem.\\nEste alerta se repete a cada 6 horas enquanto a conexão não voltar.`\n      : `O WhatsApp do pet shop ${e.petshop} voltou a se conectar. Nada a fazer.`,\n  } } };\n});\n"
+        "jsCode": "return $input.all().map((it) => {\n  const e = it.json.resultados.evento.body;\n  const queda = e.alertar_queda;\n  return { json: { email: {\n    assunto: queda ? `⚠️ WhatsApp desconectado: ${e.petshop}` : `✅ WhatsApp reconectado: ${e.petshop}`,\n    texto: queda\n      ? `O WhatsApp do pet shop ${e.petshop} está desconectado da Evolution API.\\nBot ligado: ${e.bot_ativo ? 'sim' : 'não'}.\\nDetalhe: ${e.detalhe || '-'}\\n\\nO que fazer: abrir o manager da Evolution (/manager), entrar na instância e conectar de novo (QR ou código de pareamento) com o celular do pet shop. Se o detalhe cita 401, o aparelho foi removido no celular.\\nEnquanto isso, o bot não responde e os lembretes não saem.\\nEste alerta se repete a cada 6 horas enquanto a conexão não voltar.`\n      : `O WhatsApp do pet shop ${e.petshop} voltou a se conectar. Nada a fazer.`,\n  } } };\n});\n"
       },
-      "id": "2ac47540-806b-4d87-8264-6bd8df6988c5",
+      "id": "85f06b3d-55dd-4a49-880e-34bdcda1595e",
       "name": "Montar e-mail",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1760,
-        40
+        -60
       ]
     },
     {
@@ -230,13 +200,13 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ from: 'PetCare Hub · Alertas <noreply@petcarehub.com.br>', to: ['suporte@petcarehub.com.br'], subject: $json.email.assunto, text: $json.email.texto }) }}"
       },
-      "id": "f0b47268-acae-4a76-8747-9c8dbf8d28e7",
+      "id": "503a1ba1-4323-4a7a-8f8e-80a62879fafc",
       "name": "Resend · e-mail",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         1980,
-        40
+        -60
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -248,43 +218,21 @@
     },
     {
       "parameters": {
-        "content": "## Conexão do WhatsApp (PL-03)\nDuas fontes: webhooks \"Ao desconectar\"/\"Ao conectar\" da Z-API e checagem a cada 15 min (pega queda que o webhook não avisou).\n`bot_conexao_evento` decide se alerta: na queda, de novo a cada 6 h se continuar caído, e na volta.\nE-mail via Resend para suporte@ (notificação no celular).",
+        "content": "## Conexão do WhatsApp (PL-03)\nA cada 15 min consulta `connectionState` de cada instância com a chave global (`evolution global`).\nO webhook `connection.update` é tratado no **01 · Bot conversa**.\n`bot_conexao_evento` decide se alerta: na queda, de novo a cada 6 h se continuar caído, e na volta.\nE-mail via Resend para suporte@.",
         "height": 240,
         "width": 560
       },
-      "id": "ab7de277-06ed-4f19-8de2-35200f33b8be",
-      "name": "Nota 6624",
+      "id": "63600e37-0cae-4657-8b21-8a22c25a8500",
+      "name": "Nota 2ac4",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         0,
-        -320
+        -300
       ]
     }
   ],
   "connections": {
-    "Z-API · conexão": {
-      "main": [
-        [
-          {
-            "node": "Interpretar webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Interpretar webhook": {
-      "main": [
-        [
-          {
-            "node": "RPC · registrar conexão",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "A cada 15 min": {
       "main": [
         [
@@ -322,25 +270,25 @@
       "main": [
         [
           {
-            "node": "Z-API · status",
+            "node": "Evolution · estado",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Z-API · status": {
+    "Evolution · estado": {
       "main": [
         [
           {
-            "node": "Interpretar status",
+            "node": "Interpretar estado",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Interpretar status": {
+    "Interpretar estado": {
       "main": [
         [
           {
