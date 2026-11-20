@@ -1,6 +1,9 @@
 -- =====================================================================
 -- PetCare Hub · 10 · Testes automatizados
 -- Pré-requisito: 08_seed e 09_usuarios aplicados.
+-- Rev. 09/11/2026: donos de teste com os e-mails atuais (petfeliz@gmail.com e
+-- pataamigapetshop@outlook.com); "Pet Rival" é o atual Pata Amiga Petshop.
+-- Rev. 21 (11/11/2026): T11 com a ficha pública nova.
 --
 -- Funciona no SQL Editor do Supabase: todos os testes rodam dentro de
 -- UMA chamada de função, num bloco que é sempre desfeito no final
@@ -32,14 +35,14 @@ declare
   d date; f date; u_pf uuid; u_pr uuid;
   saida text[] := '{}';
   n int; ok boolean; v_ag uuid; v_tutor uuid; v_ins uuid; v_req uuid;
-  a public.agendamentos; v public.insumos; r jsonb;
+  a public.agendamentos; v public.insumos; r jsonb; v_cod text;
 begin
   perform set_config('plpgsql.check_asserts', 'on', true);
 
   select min((x.inicio at time zone tz)::date) into d from public.agendamentos x where x.petshop_id = pf;
   select (b.inicio at time zone tz)::date into f from public.bloqueios b where b.tipo = 'feriado' limit 1;
-  select id into u_pf from auth.users where email = 'dono.petfeliz@teste.local';
-  select id into u_pr from auth.users where email = 'dono.petrival@teste.local';
+  select id into u_pf from auth.users where email = 'petfeliz@gmail.com';
+  select id into u_pr from auth.users where email = 'pataamigapetshop@outlook.com';
 
   -- Bloco com tratador de exceção = savepoint. Ele SEMPRE termina em exceção,
   -- o que desfaz tudo o que os testes gravaram. Só o array "saida" sobrevive.
@@ -135,7 +138,7 @@ begin
     assert not exists (select 1 from public.agendamentos x where x.petshop_id <> pf), 'FALHOU T05b: vazou agendamento de outro pet shop';
     assert (select count(*) from public.tutores) = 2, 'FALHOU T05c: deveria ver só Carla e Diego';
     assert (select count(*) from public.pets) = 3, 'FALHOU T05d: deveria ver Thor, Mel e Nina';
-    assert not exists (select 1 from public.pets x where x.id = p_bob), 'FALHOU T05e: Bob é do Pet Rival';
+    assert not exists (select 1 from public.pets x where x.id = p_bob), 'FALHOU T05e: Bob é do Pata Amiga';
     assert not exists (select 1 from public.harpia_contratos), 'FALHOU T05f: contrato Harpia é só do super admin';
     ok := false;
     begin
@@ -159,15 +162,15 @@ begin
     reset role;
     saida := saida || 'OK T05 RLS do dono (isolamento, plano protegido, vínculo só por RPC, RPC do bot fechada)'::text;
 
-    -- ------------------------------------------------------------ T06 RLS: dono do Pet Rival
+    -- ------------------------------------------------------------ T06 RLS: dono do Pata Amiga
     perform set_config('request.jwt.claims', json_build_object('sub', u_pr, 'role', 'authenticated')::text, true);
     set local role authenticated;
-    assert not exists (select 1 from public.agendamentos x where x.petshop_id = pf), 'FALHOU T06a: Rival vendo agenda do Pet Feliz';
+    assert not exists (select 1 from public.agendamentos x where x.petshop_id = pf), 'FALHOU T06a: Pata Amiga vendo agenda do Pet Feliz';
     assert (select count(*) from public.minhas_funcionalidades(pr)) = 9, 'FALHOU T06b: Essencial deveria ter 9 funcionalidades';
     v_tutor := public.cadastrar_tutor(pr, '(19) 98888-7777', 'Carla S.');
     assert v_tutor = t_carla, 'FALHOU T06c: deveria reaproveitar o tutor global';
-    assert (select tp.nome from public.tutor_petshop tp where tp.tutor_id = v_tutor) = 'Carla S.', 'FALHOU T06d: nome é do vínculo do Rival';
-    assert not exists (select 1 from public.pets x where x.tutor_id = t_carla), 'FALHOU T06e: Rival não pode ver pets da Carla';
+    assert (select tp.nome from public.tutor_petshop tp where tp.tutor_id = v_tutor) = 'Carla S.', 'FALHOU T06d: nome é do vínculo do Pata Amiga';
+    assert not exists (select 1 from public.pets x where x.tutor_id = t_carla), 'FALHOU T06e: Pata Amiga não pode ver pets da Carla';
     reset role;
     saida := saida || 'OK T06 RLS do outro pet shop e cadastro de tutor sem vazamento'::text;
 
@@ -175,7 +178,7 @@ begin
     r := public.bot_entrada(pf, '19966665555');
     assert (r ->> 'conhecido_aqui')::boolean = false, 'FALHOU T07a: Elisa não é cliente do Pet Feliz';
     assert r -> 'pets_compartilhaveis' @> jsonb_build_array(jsonb_build_object('id', p_bob)), 'FALHOU T07b: Bob deveria ser oferecido';
-    assert r::text not like '%Rival%', 'FALHOU T07c: resposta do bot não pode citar o outro pet shop';
+    assert r::text not ilike '%pata amiga%' and r::text not ilike '%rival%', 'FALHOU T07c: resposta do bot não pode citar o outro pet shop';
     perform public.bot_vincular_pet_compartilhado(pf, t_elisa, p_bob);
     r := public.bot_entrada(pf, '+5519966665555');
     assert (r ->> 'conhecido_aqui')::boolean and jsonb_array_length(r -> 'pets') = 1, 'FALHOU T07d: Bob vinculado';
@@ -194,8 +197,8 @@ begin
     assert (select x.alergias from public.pets x where x.id = p_bob) = 'Frango', 'FALHOU T08a: dado de saúde do Bob compartilhado';
     assert exists (select 1 from public.pet_eventos e where e.pet_id = p_bob and e.tipo = 'vacina'), 'FALHOU T08b: vacina compartilhável visível';
     assert not exists (select 1 from public.pet_eventos e where e.pet_id = p_bob and e.petshop_id = pr and e.tipo = 'estetica'),
-           'FALHOU T08c: banho do Rival NUNCA pode aparecer';
-    assert not exists (select 1 from public.tutor_petshop tp where tp.petshop_id = pr), 'FALHOU T08d: vínculo comercial do Rival vazou';
+           'FALHOU T08c: banho do Pata Amiga NUNCA pode aparecer';
+    assert not exists (select 1 from public.tutor_petshop tp where tp.petshop_id = pr), 'FALHOU T08d: vínculo comercial do Pata Amiga vazou';
     reset role;
     saida := saida || 'OK T08 compartilhamento: vacina sim, banho e dados comerciais não'::text;
 
@@ -223,11 +226,17 @@ begin
     saida := saida || 'OK T10 regras de dados (estética nunca compartilha, consentimento imutável)'::text;
 
     -- ------------------------------------------------------------ T11 PÁGINA PÚBLICA (anon)
+    -- Rev. 21: código curto; a ficha nasce desligada e só aparece com o
+    -- consentimento 'ficha_publica' do tutor (detalhe em aceite_ficha.sql).
+    select q.codigo into v_cod from public.plaquinhas q where q.pet_id = p_thor and q.status = 'ativa' limit 1;
+    assert v_cod is not null, 'FALHOU T11a: plaquinha ativa do Thor não encontrada (seed)';
     perform set_config('request.jwt.claims', '{"role":"anon"}', true);
     set local role anon;
-    r := public.ficha_publica('thor2026ab');
-    assert r ->> 'nome' = 'Thor' and r ? 'contato_whatsapp' and not r ? 'alergias', 'FALHOU T11a: ficha do Thor';
-    assert public.ficha_publica('d0000000-0000-4000-8000-000000000002') is null, 'FALHOU T11b: ficha da Mel está desligada';
+    r := public.ficha_publica(lower(v_cod));
+    assert r ->> 'estado' = 'desligada' and not r ? 'pet' and r::text not like '%9988887777%',
+           'FALHOU T11a: ficha do Thor deveria abrir desligada, sem dados do pet nem do tutor: ' || r::text;
+    assert public.ficha_publica('d0000000-0000-4000-8000-000000000001') = '{"estado":"indisponivel"}'::jsonb,
+           'FALHOU T11b: o id do pet não pode abrir a ficha';
     ok := false;
     begin
       perform 1 from public.petshops;
@@ -235,7 +244,7 @@ begin
     end;
     assert ok, 'FALHOU T11c: anon não pode ler tabelas';
     reset role;
-    saida := saida || 'OK T11 ficha pública (só campos liberados) e anon bloqueado'::text;
+    saida := saida || 'OK T11 ficha pública (código curto, nasce desligada, id não abre) e anon bloqueado'::text;
 
     -- ------------------------------------------------------------ T12 ALMOXARIFADO
     insert into public.insumos (petshop_id, nome, unidade) values (pf, 'Shampoo neutro 5 L (teste)', 'frasco') returning id into v_ins;

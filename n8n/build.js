@@ -118,14 +118,17 @@ const evoEnvio = (name, pos) => http(name, pos, { url: EVO_ENVIO_URL, cred: CRED
 const PREPARAR_LOG = `
 // Depois do envio: registra em mensagens_log (CM-11) com o id da Evolution (key.id).
 // O id é o que faz o fromMe do próprio bot ser reconhecido e ignorado.
+// Mensagens do número central do PetCare Hub (sem petshop_id) não entram no
+// mensagens_log: o registro delas é a tabela achados (arquivo 21).
 const envios = $('ORIGEM').all();
-return $input.all().map((r, i) => {
+return $input.all().flatMap((r, i) => {
   const e = envios[i].json.envio;
+  if (!e.petshop_id) return [];
   const j = r.json || {};
   const ok = j.statusCode >= 200 && j.statusCode < 300;
   const b = ok && j.body && typeof j.body === 'object' ? j.body : {};
   const idExterno = (b.key && b.key.id) || b.messageId || b.id || null;
-  return { json: {
+  return [{ json: {
     envio: { ...e, token: undefined },
     falhou: !ok,
     resultados: {},
@@ -133,7 +136,7 @@ return $input.all().map((r, i) => {
       p_petshop: e.petshop_id, p_telefone: e.para, p_direcao: 'saida', p_tipo: e.tipo,
       p_status: ok ? 'enviada' : 'falha', p_agendamento: e.agendamento_id || null,
       p_id_externo: idExterno, p_erro: ok ? null : JSON.stringify(j.body || j.error || j).slice(0, 500) } },
-  } };
+  } }];
 });`;
 
 // E-mail de queda e volta da conexão (usado no 01, pelo webhook, e no 03, pelo cron).
@@ -238,7 +241,7 @@ return $json.proximo.envios.map((e) => ({ json: { envio: e } }));`),
     evoEnvio('Evolution · enviar', [1980, 0]),
     code('Preparar log', [2200, 0], PREPARAR_LOG.replace('ORIGEM', 'Separar envios')),
     rpcNode('RPC · registrar envio', [2420, 0]),
-    nota('## Bot conversa (Evolution API)\n1. Webhook com **Header Auth** (`x-petcare-secret`) recebe mensagens e conexão da Evolution.\n2. **Conexão** → `bot_conexao_evento` → e-mail se for queda ou volta.\n3. **fromMe** espera 8 s (dá tempo de o envio do bot gravar o id) e chama `bot_registrar_fromme`: eco do bot é ignorado; mensagem do dono pausa o bot (BT-18).\n4. **Motor (passo)** pede uma RPC por vez até terminar. Fontes: `n8n/src/motor-conversa.js` e `n8n/src/adaptador-evolution.js` (não edite aqui).\n5. Envia pela Evolution e registra em `mensagens_log`.', [0, -620], 640, 300),
+    nota('## Bot conversa (Evolution API)\n1. Webhook com **Header Auth** (`x-petcare-secret`) recebe mensagens e conexão da Evolution.\n2. **Conexão** → `bot_conexao_evento` → e-mail se for queda ou volta.\n3. **fromMe** espera 8 s (dá tempo de o envio do bot gravar o id) e chama `bot_registrar_fromme`: eco do bot é ignorado; mensagem do dono pausa o bot (BT-18).\n4. **Motor (passo)** pede uma RPC por vez até terminar. Fontes: `n8n/src/motor-conversa.js` e `n8n/src/adaptador-evolution.js` (não edite aqui).\n5. Envia pela Evolution e registra em `mensagens_log`.\n6. **Número central** (arquivo 21): instância que não é de pet shop e está em `canais_plataforma` → ACHEI e FICHA. Sem `mensagens_log`; o registro é a tabela `achados`.', [0, -620], 640, 340),
   ];
   const c = {};
   liga(c, 'Evolution · Ao receber', 'Normalizar evento');
@@ -487,17 +490,25 @@ const AJUDA = [
   '#devolver · devolve a conversa ao bot',
   '#lembrete · manda o lembrete de amanhã deste telefone, se houver',
   '#estado · mostra o estado da conversa',
+  '#central · alterna para o número central do PetCare Hub (ACHEI e FICHA) e volta',
 ].join('\\n');
 
 const msg = String($json.chatInput || '').trim();
 const sessao = String($json.sessionId || 'sem-sessao');
 const memo = $getWorkflowStaticData('global');
 memo.telefones = memo.telefones || {};
+memo.central = memo.central || {};
 const foneDe = (s) => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return '+5599' + String(h % 1e9).padStart(9, '0'); };
 let tel = memo.telefones[sessao] || foneDe(sessao);
 const direto = (t) => [{ json: { resposta_direta: t } }];
 
-if (/^#ajuda/i.test(msg)) return direto(AJUDA + '\\n\\nTelefone desta conversa: ' + tel);
+if (/^#ajuda/i.test(msg)) return direto(AJUDA + '\\n\\nTelefone desta conversa: ' + tel + (memo.central[sessao] ? '\\nFalando com: número central' : ''));
+if (/^#central/i.test(msg)) {
+  memo.central[sessao] = !memo.central[sessao];
+  return direto(memo.central[sessao]
+    ? 'Agora você fala com o número central do PetCare Hub. Teste: ACHEI CODIGO recado, ou FICHA CODIGO (do telefone do tutor). Mande #central para voltar.'
+    : 'De volta ao bot do pet shop.');
+}
 if (/^#novo/i.test(msg)) {
   tel = foneDe(sessao + ':' + Date.now()); memo.telefones[sessao] = tel;
   return direto('Agora você é um tutor novo, com o telefone ' + tel + '. Mande "oi".');
@@ -511,7 +522,7 @@ if (mt) {
   return direto('Agora você escreve do telefone ' + tel + '.');
 }
 
-const evento = { canal: 'teste', instance_id: SLUG, telefone: tel,
+const evento = { canal: 'teste', instance_id: SLUG, telefone: tel, central: !!memo.central[sessao],
   message_id: 'teste-' + Date.now() + '-' + Math.floor(Math.random() * 1e6), from_api: null };
 const cmd = /^#(\\w+)/.exec(msg);
 if (cmd) {
@@ -537,7 +548,7 @@ const p = $json.proximo || {};
 const fone = $json.evento.telefone;
 const partes = [];
 for (const e of p.envios || []) {
-  partes.push(e.para === fone ? e.texto : '📣 Aviso ao celular do dono (' + e.para + '):\\n' + e.texto);
+  partes.push(e.para === fone ? e.texto : '📣 ' + (e.rotulo || 'Aviso ao celular do dono') + ' (' + e.para + '):\\n' + e.texto);
 }
 if (!partes.length) partes.push('_(o bot não respondeu' + (p.nota ? ': ' + p.nota : '') + ')_');
 else if (p.nota) partes.push('_' + p.nota + '_');
@@ -548,7 +559,8 @@ return [{ json: { output: partes.join('\\n\\n— — —\\n\\n').replace(/\\n/g,
       id: id(), name: 'Responder no chat', type: 'n8n-nodes-base.respondToWebhook', typeVersion: 1.1, position: [1320, 60] },
     code('Preparar log', [1540, 60], `
 // Registra as saídas em mensagens_log, como no WhatsApp (canal 'teste').
-return ($json.envios || []).map((e) => ({ json: { resultados: {}, proximo: { chave: 'log', fn: 'bot_registrar_mensagem', args: {
+// As do número central (sem pet shop) ficam só na tabela achados.
+return ($json.envios || []).filter((e) => e.petshop_id).map((e) => ({ json: { resultados: {}, proximo: { chave: 'log', fn: 'bot_registrar_mensagem', args: {
   p_petshop: e.petshop_id, p_telefone: e.para, p_direcao: 'saida', p_tipo: e.tipo, p_status: 'enviada',
   p_agendamento: e.agendamento_id || null, p_id_externo: 'teste-saida-' + Date.now() + '-' + Math.floor(Math.random() * 1e6), p_erro: null } } } }));`),
     rpcNode('RPC · registrar saída', [1760, 60]),

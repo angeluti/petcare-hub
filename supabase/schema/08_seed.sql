@@ -6,6 +6,10 @@
 -- Apague a parte B antes de cadastrar o pet shop real da POC
 -- (ou rode o bloco "LIMPAR DADOS DE TESTE" no fim do guia).
 -- UUIDs fixos para os testes acharem os registros.
+-- Rev. 09/11/2026: nomes e slugs atuais (Pet Feliz / pet-feliz e
+-- Pata Amiga Petshop / pata-amiga). Os ids não mudam (o 11 apaga por id).
+-- Rev. 21 (11/11/2026): pets sem a coluna ficha_publica (a ficha nasce
+-- desligada; só o tutor liga) e plaquinha do Thor com código curto TH0R26.
 -- =====================================================================
 begin;
 
@@ -71,7 +75,7 @@ select p.plano, f.codigo
 do $$
 declare
   pf  uuid := '11111111-1111-4111-8111-111111111111';   -- Pet Feliz (simula a POC)
-  pr  uuid := '22222222-2222-4222-8222-222222222222';   -- Pet Rival (outro cliente do Hub)
+  pr  uuid := '22222222-2222-4222-8222-222222222222';   -- Pata Amiga Petshop (outro cliente do Hub)
   ana uuid := 'aaaaaaaa-0000-4000-8000-000000000001';
   bru uuid := 'aaaaaaaa-0000-4000-8000-000000000002';
   riv uuid := 'aaaaaaaa-0000-4000-8000-000000000003';
@@ -99,12 +103,12 @@ begin
 
   -- Pet shops
   insert into public.petshops (id, nome, slug, telefone_wp, plano_codigo, modo_capacidade, intervalo_slot_min) values
-    (pf, 'Pet Feliz (TESTE)', 'pet-feliz-teste', '+5519900000001', 'pro',     'multiplo', 30),
-    (pr, 'Pet Rival (TESTE)', 'pet-rival-teste', '+5519900000002', 'starter', 'simples',  30);
+    (pf, 'Pet Feliz',          'pet-feliz',  '+5519900000001', 'pro',     'multiplo', 30),
+    (pr, 'Pata Amiga Petshop', 'pata-amiga', '+5519900000002', 'starter', 'simples',  30);
 
   insert into public.bot_config (petshop_id, nome_bot, saudacao, ativo) values
     (pf, 'Luna', 'Oi, eu sou a Luna, assistente do Pet Feliz! 🐾', false),
-    (pr, 'Max',  'Olá! Aqui é o Max, do Pet Rival.', false);
+    (pr, 'Max',  'Olá! Aqui é o Max, do Pata Amiga Petshop.', false);
 
   insert into public.harpia_contratos (petshop_id, setup_tipo, setup_valor, desconto_percentual, desconto_motivo) values
     (pf, 'padrao', 0, 100, 'POC: permuta (gratuidade extensível); depois 30% vitalício no Profissional');
@@ -156,29 +160,28 @@ begin
   insert into public.tutor_petshop (tutor_id, petshop_id, nome, origem) values
     (t_carla, pf, 'Carla Souza', 'manual'),
     (t_diego, pf, 'Diego Lima',  'bot'),
-    (t_elisa, pr, 'Elisa Prado', 'bot');        -- Elisa só é cliente do Pet Rival
+    (t_elisa, pr, 'Elisa Prado', 'bot');        -- Elisa só é cliente do Pata Amiga
 
-  insert into public.pets (id, tutor_id, nome, especie, raca, porte, pelagem, alergias, criado_por_petshop_id, ficha_publica) values
-    (p_thor, t_carla, 'Thor', 'cao', 'Golden Retriever', 'G',  'longa', null, pf,
-       '{"ativa": true, "campos": ["nome","especie","raca","contato"]}'),
-    (p_mel,  t_carla, 'Mel',  'cao', 'Shih-tzu',         'P',  'longa', null, pf, default),
-    (p_nina, t_diego, 'Nina', 'cao', 'SRD',              'M',  'curta', null, pf, default),
-    (p_bob,  t_elisa, 'Bob',  'cao', 'Bernese',          'GG', 'dupla', 'Frango', pr, default);
+  insert into public.pets (id, tutor_id, nome, especie, raca, porte, pelagem, alergias, criado_por_petshop_id) values
+    (p_thor, t_carla, 'Thor', 'cao', 'Golden Retriever', 'G',  'longa', null, pf),
+    (p_mel,  t_carla, 'Mel',  'cao', 'Shih-tzu',         'P',  'longa', null, pf),
+    (p_nina, t_diego, 'Nina', 'cao', 'SRD',              'M',  'curta', null, pf),
+    (p_bob,  t_elisa, 'Bob',  'cao', 'Bernese',          'GG', 'dupla', 'Frango', pr);
   insert into public.pet_petshop (pet_id, petshop_id, temperamento) values
     (p_thor, pf, 'Dócil'), (p_mel, pf, 'Medrosa com secador'), (p_nina, pf, null), (p_bob, pr, 'Agitado');
 
-  -- Elisa autorizou compartilhar (no bot do Pet Rival). Termo fictício v0.
+  -- Elisa autorizou compartilhar (no bot do Pata Amiga). Termo fictício v0.
   insert into public.consentimentos (tutor_id, escopo, versao_termo, canal, petshop_origem_id) values
     (t_elisa, 'compartilhar_dados_pet', 'v0-teste', 'bot', pr),
     (t_elisa, 'compartilhar_saude',     'v0-teste', 'bot', pr);
 
-  -- Linha do tempo do Bob no Pet Rival: uma vacina (compartilhável) e um banho (sempre privado)
+  -- Linha do tempo do Bob no Pata Amiga: uma vacina (compartilhável) e um banho (sempre privado)
   insert into public.pet_eventos (pet_id, petshop_id, tipo, visibilidade, ocorrido_em, titulo, dados) values
     (p_bob, pr, 'vacina',   'compartilhavel', now() - interval '20 days', 'Vacina V10', '{"vacina":"V10","validade":"2027-10-01"}'),
     (p_bob, pr, 'estetica', 'privado',        now() - interval '10 days', 'Banho',      '{"valor_total":85}');
 
   insert into public.plaquinhas (pet_id, petshop_id, kit, material, codigo, entregue_em) values
-    (p_thor, pf, 'essencial', 'Acrílico azul 3 mm', 'THOR2026AB', current_date);
+    (p_thor, pf, 'essencial', 'Acrílico azul 3 mm', 'TH0R26', current_date);
 
   -- Agenda do próximo dia útil no Pet Feliz (modo múltiplo: Ana com 2 pets escalonados)
   perform public.reservar_agendamento(pf, p_thor, t_carla, array[s_bt, s_hid], ((d + time '09:00') at time zone tz), ana, 'manual');

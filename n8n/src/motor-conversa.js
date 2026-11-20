@@ -1,6 +1,9 @@
 // =====================================================================
 // PetCare Hub · Motor de conversa do bot (etapa 5)
 // Cobre BT-01 a BT-06, BT-08 a BT-10, BT-12, BT-16 a BT-18, CM-01 e CM-03.
+// Arquivo 21 (11/11/2026): número central do PetCare Hub (PB-01/PB-02):
+// ACHEI {codigo} repassa ao tutor o número e o recado de quem achou o pet;
+// FICHA {codigo} deixa o tutor escolher o que a ficha pública mostra.
 //
 // Como funciona no N8n:
 //   Motor → (precisa de RPC?) → sub-workflow "RPC Supabase" → Motor → … → fim
@@ -168,14 +171,170 @@ function comandoTeste(ctx, rpc, petshop) {
   return { envios: [], nota: `Comando desconhecido: ${ev.comando}` };
 }
 
+// =================================================================== central
+// Número central do PetCare Hub (canais_plataforma, função 'achados').
+// Não é de pet shop: não usa bot_entrada, menu nem mensagens_log. Quem achou
+// nunca recebe nada do tutor; o tutor recebe o número e o recado de quem achou.
+const AJUDA_CENTRAL = 'Oi! Este é o WhatsApp do *PetCare Hub* para pets encontrados. 🐾\n\n'
+  + '• Achou um pet com plaquinha PetCare? Leia o QR da plaquinha e toque em *Achei este pet*, '
+  + 'ou mande *ACHEI* e o código de 6 letras e números gravado nela.\n'
+  + '• É o tutor? Mande *FICHA* e o código para escolher o que a ficha do seu pet mostra.';
+const ESCOLHAS_FICHA = { 1: 'basica', 2: 'completa', 3: 'desligada', 4: 'perdida' };
+const NOME_NIVEL = { desligada: 'desligada', basica: 'básica', completa: 'completa' };
+const foneLegivel = (tel) => {
+  const d = String(tel || '').replace(/\D/g, '');
+  const m = /^55(\d{2})(\d{4,5})(\d{4})$/.exec(d);
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : '+' + d;
+};
+// Código depois de ACHEI/FICHA/PERDI: 6 letras e números (o banco normaliza O, I e L).
+function lerComando(texto) {
+  const bruto = String(texto || '');
+  const m = /\b(achei|ficha|perdi)\b/i.exec(bruto);
+  if (!m) return null;
+  const cmd = m[1].toLowerCase();
+  // Primeiro "token" de 6 letras e números depois do comando (hífen ignorado):
+  // com algum dígito, ou todo em maiúsculas (o código impresso). Assim "o pet da"
+  // não vira código, e "ACHEI o pet da plaquinha K7M3QX" funciona.
+  const re = /[0-9A-Za-z][0-9A-Za-z-]{4,8}/g;
+  re.lastIndex = m.index + m[0].length;
+  let t;
+  while ((t = re.exec(bruto))) {
+    const limpo = t[0].replace(/-/g, '');
+    if (limpo.length === 6 && (/\d/.test(limpo) || limpo === limpo.toUpperCase())) {
+      const resto = bruto.slice(t.index + t[0].length)
+        .replace(/^[\s.,;:!-]*/, '')
+        .replace(/^recado\s*[:.-]?\s*/i, '')
+        .trim();
+      return { cmd, codigo: limpo.toUpperCase(), resto };
+    }
+    if (t.index - (m.index + m[0].length) > 60) break;
+  }
+  return { cmd, codigo: null, resto: '' };
+}
+function escolhaFicha(t) {
+  const n = num(t);
+  if (n && ESCOLHAS_FICHA[n]) return ESCOLHAS_FICHA[n];
+  if (/^basica$/.test(t)) return 'basica';
+  if (/^completa$/.test(t)) return 'completa';
+  if (/^(desligada|desligar)$/.test(t)) return 'desligada';
+  if (/^(perdi|perdida|perdi a plaquinha)$/.test(t)) return 'perdida';
+  return null;
+}
+
+function conversarCentral(ctx, rpc, central) {
+  const ev = ctx.evento;
+  const teste = central.canal === 'teste';
+  if (ev.tipo === 'fromme') return { envios: [], nota: 'número central: mensagem enviada pelo próprio número (ignorada)' };
+  const conv = rpc('c_entrada', 'bot_central_entrada', { p_telefone: ev.telefone }) || { estado: 'idle', dados: {} };
+  const saidas = [];
+  const paraQuem = (texto) => saidas.push({ para: ev.telefone, texto, tipo: 'conversa', agendamento_id: null });
+  let estado = 'idle';
+  let dados = {};
+
+  const fichaEscolher = (codigo) => {
+    const r = rpc('c_ficha', 'bot_ficha_consultar', { p_codigo: codigo, p_telefone: ev.telefone }) || {};
+    if (r.resultado !== 'ok') {
+      return paraQuem('Não encontrei uma plaquinha ativa sua com esse código. 😕 Confira as 6 letras e números gravados '
+        + 'e mande do mesmo WhatsApp que está no cadastro do pet shop.');
+    }
+    const termo = String(r.termo_texto || '').replace(/\{pet\}/g, r.pet_nome).replace(/\{codigo\}/g, r.codigo);
+    paraQuem(`${termo}\n\nAgora a ficha de ${r.pet_nome} está *${NOME_NIVEL[r.nivel] || r.nivel}*. Responda com o número.`);
+    estado = 'aguardando_ficha';
+    dados = { codigo: r.codigo, versao: r.termo_versao, pet: r.pet_nome };
+  };
+  const fichaDefinir = (codigo, escolha, versao, pet) => {
+    const r = rpc('c_definir', 'bot_ficha_definir', {
+      p_codigo: codigo, p_telefone: ev.telefone, p_escolha: escolha, p_versao: versao || null,
+      p_evidencia: { canal: 'bot', numero: 'central', message_id: ev.message_id || null, resposta: String(ev.texto || '').slice(0, 60) },
+    });
+    const p = pet || 'seu pet';
+    if (r === 'basica' || r === 'completa') {
+      return paraQuem(`Pronto! ✅ A ficha de ${p} agora está *${NOME_NIVEL[r]}*. Quem ler o QR vê esses dados e pode avisar você por aqui, sem ver o seu telefone.\nPara mudar, mande *FICHA ${codigo}*.`);
+    }
+    if (r === 'desligada') {
+      return paraQuem(`Pronto! A ficha de ${p} está *desligada*. Quem ler o QR só vê o botão para avisar você.\nPara mudar, mande *FICHA ${codigo}*.`);
+    }
+    if (r === 'perdida') {
+      return paraQuem(`Plaquinha ${codigo} desativada. ✅ Quem ler esse QR não vê mais nada de ${p}. Peça uma nova no pet shop quando quiser.`);
+    }
+    paraQuem('Não consegui mudar a ficha: confira o código e mande do WhatsApp do cadastro. 😕');
+  };
+
+  if (ev.tipo === 'midia') {
+    paraQuem('Por aqui eu só leio texto. 🙂\n\n' + AJUDA_CENTRAL);
+  } else {
+    const t = norm(ev.texto);
+    const c = lerComando(ev.texto);
+    if (conv.estado === 'aguardando_ficha' && !c) {
+      const escolha = escolhaFicha(t);
+      if (escolha) {
+        fichaDefinir(conv.dados.codigo, escolha, conv.dados.versao, conv.dados.pet);
+      } else {
+        paraQuem(`Responda *1*, *2*, *3* ou *4* para a ficha de ${conv.dados.pet || 'seu pet'}. Para sair, mande *menu*.`);
+        if (!ehMenu(t)) { estado = 'aguardando_ficha'; dados = conv.dados; } else { saidas.length = 0; paraQuem(AJUDA_CENTRAL); }
+      }
+    } else if (c && c.cmd === 'achei') {
+      if (!c.codigo) {
+        paraQuem('Para avisar o tutor, mande *ACHEI* e o código de 6 letras e números gravado na plaquinha. Exemplo: ACHEI K7M3QX Estou na praça da matriz.');
+      } else {
+        const r = rpc('c_achado', 'bot_achado_registrar', {
+          p_codigo: c.codigo, p_telefone: ev.telefone, p_mensagem: c.resto || null,
+          p_evidencia: { message_id: ev.message_id || null, numero: 'central' },
+        }) || {};
+        if (r.resultado === 'encaminhado') {
+          saidas.push({
+            para: r.telefone_tutor, tipo: 'conversa', agendamento_id: null, rotulo: 'Mensagem ao tutor',
+            texto: `🐾 Alguém encontrou ${r.pet_nome}!\n\nQuem achou: ${foneLegivel(r.telefone_achador)}\nChame no WhatsApp: https://wa.me/${String(r.telefone_achador).replace(/\D/g, '')}\n`
+              + (r.mensagem ? `Recado: "${r.mensagem}"` : 'Sem recado.')
+              + `\n\nQuem achou não recebeu o seu nome nem o seu telefone: você decide se chama.\n_Aviso do PetCare Hub · plaquinha ${r.codigo}_`,
+          });
+          const pet = r.pet_nome_publico ? `de ${r.pet_nome_publico}` : 'do pet';
+          paraQuem(`Obrigado! 💙 Avisei agora o tutor ${pet}. Ele recebeu o seu número${r.mensagem ? ' e o seu recado' : ''} e deve chamar você em breve.\n`
+            + (r.mensagem ? '' : `Se puder, mande também onde vocês estão: *ACHEI ${r.codigo}* e o recado.\n`)
+            + 'Enquanto isso, se puder, deixe o pet num lugar seguro e com água. 🐾');
+        } else if (r.resultado === 'limite') {
+          paraQuem('O tutor já recebeu um aviso sobre este pet há poucos minutos. 🙏 Se puder, fique com ele num lugar seguro: o tutor deve chamar você em breve.');
+        } else if (r.resultado === 'proprio') {
+          paraQuem(`Esta plaquinha é do seu pet. 🙂 Quando alguém tocar em *Achei este pet*, o aviso chega aqui neste número.\nPara escolher o que a ficha mostra, mande *FICHA ${c.codigo}*.`);
+        } else {
+          paraQuem('Não encontrei uma plaquinha ativa com esse código. 😕 Confira as 6 letras e números gravados ou leia o QR de novo.\n'
+            + 'Se não der, um pet shop ou clínica veterinária perto de você pode ajudar a achar o tutor.');
+        }
+      }
+    } else if (c && c.cmd === 'ficha') {
+      if (!c.codigo) paraQuem('Mande *FICHA* e o código de 6 letras e números da plaquinha. Exemplo: FICHA K7M3QX');
+      else fichaEscolher(c.codigo);
+    } else if (c && c.cmd === 'perdi') {
+      if (!c.codigo) paraQuem('Mande *PERDI* e o código da plaquinha para desativá-la. Exemplo: PERDI K7M3QX');
+      else fichaDefinir(c.codigo, 'perdida', null, null);
+    } else {
+      paraQuem(AJUDA_CENTRAL);
+    }
+  }
+
+  if (estado !== conv.estado || estado !== 'idle') {
+    rpc('c_salvar', 'bot_central_salvar', { p_telefone: ev.telefone, p_estado: estado, p_dados: dados });
+  }
+  const env = teste ? { canal: 'teste' } : rpc('c_envio', 'bot_envio_plataforma', { p_funcao: central.funcao || 'achados' });
+  if (!teste && (!env || !env.ativo)) return { envios: [], nota: 'número central desligado (canais_plataforma.ativo = false)' };
+  return { envios: montarEnvios(null, env, saidas), estado };
+}
+
 function conversar(ctx, rpc) {
   const ev = ctx.evento;
   const teste = ev.canal === 'teste';
+  // Canal de teste com #central: conversa com o número central, sem pet shop.
+  if (teste && ev.central) return conversarCentral(ctx, rpc, { funcao: 'achados', canal: 'teste' });
   const petshop = teste
     ? rpc('petshop', 'bot_petshop_teste', { p_slug: ev.instance_id })
     : ev.canal === 'evolution'
       ? rpc('petshop', 'bot_petshop_por_canal', { p_canal: 'evolution', p_instancia: ev.instance_id })
       : rpc('petshop', 'bot_petshop_por_instancia', { p_zapi_instance: ev.instance_id, p_meta_phone_id: null });
+  if (!petshop && ev.canal === 'evolution') {
+    // Não é de pet shop: pode ser o número central do PetCare Hub (arquivo 21).
+    const central = rpc('central', 'bot_canal_plataforma', { p_canal: 'evolution', p_instancia: ev.instance_id });
+    if (central) return conversarCentral(ctx, rpc, central);
+  }
   if (!petshop) {
     return { envios: [], nota: teste
       ? `O pet shop "${ev.instance_id}" não está no canal de teste (bot_config.canal precisa ser 'teste').`
@@ -687,4 +846,4 @@ class Conversa {
 }
 
 // Exporta para testes em Node; no N8n o build acrescenta a chamada ao final.
-if (typeof module !== 'undefined') module.exports = { passo, norm, simNao, textoLembrete };
+if (typeof module !== 'undefined') module.exports = { passo, norm, simNao, textoLembrete, lerComando };

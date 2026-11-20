@@ -1,0 +1,346 @@
+---
+// Ficha pública do pet: pet.petcarehub.com.br/{codigo}
+// Página estática única. O Cloudflare Pages serve este index.html para
+// qualquer caminho (o build não tem 404.html), e o script lê o código da URL
+// e chama ficha_publica no Supabase com a Publishable key.
+// Fontes locais (LGPD: o IP do visitante não vai para terceiros).
+import '@fontsource/young-serif/400.css';
+import '@fontsource-variable/figtree';
+import '@fontsource/jetbrains-mono/500.css';
+import '../../../../packages/brand/tokens.css';
+
+// Identidade (documento-mestre, seção 2): a logo vem de packages/brand/logo,
+// gerada pelos scripts da marca, nunca copiada nem redesenhada aqui.
+// Versão em cor só no fundo claro; no modo escuro, a versão escura.
+// Se um arquivo não for achado, o build para e lista o que existe na pasta.
+const logos = import.meta.glob('../../../../packages/brand/logo/*.svg', {
+  eager: true, query: '?url', import: 'default',
+}) as Record<string, string>;
+const nomeDe = (caminho: string) => caminho.split('/').pop()!.toLowerCase();
+function acharLogo(teste: (nome: string) => boolean, descricao: string): string {
+  const achado = Object.entries(logos).find(([caminho]) => teste(nomeDe(caminho)));
+  if (!achado) {
+    throw new Error(`apps/pet: logo ${descricao} não encontrada em packages/brand/logo/. `
+      + `Arquivos na pasta: ${Object.keys(logos).map(nomeDe).join(', ') || '(nenhum .svg)'}`);
+  }
+  return achado[1];
+}
+const logoClaro = acharLogo((n) => n === 'logo-horizontal-cor.svg', 'horizontal em cor (logo-horizontal-cor.svg)');
+const logoEscuro = acharLogo((n) => n.includes('horizontal') && /escur[oa]|dark/.test(n), 'horizontal escura');
+---
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#f3f7f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1524" media="(prefers-color-scheme: dark)" />
+    <title>Ficha do pet · PetCare Hub</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  </head>
+  <body>
+    <div class="pagina">
+      <header class="topo">
+        <picture class="marca">
+          <source srcset={logoEscuro} media="(prefers-color-scheme: dark)" />
+          <img src={logoClaro} alt="PetCare Hub" height="32" />
+        </picture>
+        <span class="selo" id="selo-codigo" hidden></span>
+      </header>
+
+      <main id="conteudo" aria-live="polite">
+        <!-- Carregando -->
+        <section id="v-carregando" class="cartao">
+          <p class="eyebrow">Plaquinha</p>
+          <p class="carregando">Abrindo a ficha…</p>
+        </section>
+
+        <!-- Raiz: sem código -->
+        <section id="v-inicio" class="cartao" hidden>
+          <h1>Ficha do pet</h1>
+          <p>Esta é a página das plaquinhas com QR do PetCare Hub. Leia o QR da plaquinha com a câmera do celular para ver a ficha do pet e avisar o tutor.</p>
+          <form id="form-codigo" class="codigo-form">
+            <label for="campo-codigo">Ou digite o código gravado na plaquinha</label>
+            <div class="linha">
+              <input id="campo-codigo" name="codigo" inputmode="text" autocomplete="off" autocapitalize="characters"
+                     spellcheck="false" maxlength="8" placeholder="K7M3QX" />
+              <button type="submit" class="botao">Abrir</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Código inexistente, desativado ou inválido -->
+        <section id="v-indisponivel" class="cartao" hidden>
+          <h1>Plaquinha não encontrada</h1>
+          <p>Este código não está ativo. Pode ter sido digitado errado, ou a plaquinha foi desativada pelo tutor.</p>
+          <p>Se você encontrou um pet, leve-o a um pet shop ou clínica veterinária perto de você: eles podem ajudar a encontrar a família, inclusive pelo microchip.</p>
+          <a class="link" href="/">Digitar outro código</a>
+        </section>
+
+        <!-- Erro de rede -->
+        <section id="v-erro" class="cartao" hidden>
+          <h1>Não consegui abrir a ficha</h1>
+          <p>A conexão falhou. Confira a internet do celular e tente de novo.</p>
+          <button type="button" class="botao" id="tentar">Tentar de novo</button>
+        </section>
+
+        <!-- Ficha: desligada, básica ou completa -->
+        <section id="v-ficha" hidden>
+          <article class="cartao ficha">
+            <h1 id="f-titulo"></h1>
+            <p id="f-sub" class="sub"></p>
+            <ul id="f-etiquetas" class="etiquetas" aria-label="Sobre o pet"></ul>
+            <div id="f-saude" class="saude" hidden>
+              <p class="eyebrow">Cuidados</p>
+              <p id="f-alergias" hidden></p>
+              <p id="f-condicoes" hidden></p>
+            </div>
+            <p id="f-tutor" class="tutor" hidden></p>
+          </article>
+
+          <section class="cartao achei" aria-labelledby="achei-titulo">
+            <h2 id="achei-titulo">Achou este pet?</h2>
+            <div id="achei-ativo">
+              <p>Avise o tutor pelo WhatsApp do PetCare Hub. Conte onde o pet está e como encontrar você.</p>
+              <label for="recado">Recado para o tutor</label>
+              <textarea id="recado" rows="3" maxlength="400"
+                        placeholder="Ex.: Está comigo na praça da matriz. Pode me chamar."></textarea>
+              <a id="botao-achei" class="botao botao-grande" href="#" target="_blank" rel="noopener noreferrer">Avisar o tutor pelo WhatsApp</a>
+              <p class="aviso">O tutor recebe o seu número de WhatsApp e este recado. Você não recebe o nome nem o telefone do tutor: ele é quem chama você.</p>
+            </div>
+            <div id="achei-fora" hidden>
+              <p>Se ele estiver perdido, leve-o a um pet shop ou clínica veterinária perto de você: eles ajudam a encontrar a família, inclusive pelo microchip.</p>
+            </div>
+          </section>
+
+          <p class="rodape-tutor" id="tutor-link-wrap" hidden>
+            É o tutor? <a id="tutor-link" class="link" href="#" target="_blank" rel="noopener noreferrer">Escolha o que esta ficha mostra</a>
+          </p>
+        </section>
+      </main>
+
+      <footer class="rodape">
+        <p>Ficha do pet protegida pelo PetCare Hub. Telefone, endereço e sobrenome do tutor nunca aparecem aqui.</p>
+      </footer>
+    </div>
+
+    <script>
+      import { codigoDaUrl, etiquetas, linkWhatsApp, textoAchei, textoFicha, lerResposta, type Ficha } from '../lib/ficha';
+
+      const URL_SB = import.meta.env.PUBLIC_SUPABASE_URL;
+      const CHAVE = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      const vistas = ['carregando', 'inicio', 'indisponivel', 'erro', 'ficha'] as const;
+      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+      function mostrar(v: (typeof vistas)[number]) {
+        for (const x of vistas) $(`v-${x}`).hidden = x !== v;
+      }
+
+      function texto(id: string, valor: string | null | undefined) {
+        const el = $(id);
+        el.textContent = valor ?? '';
+        el.hidden = !valor;
+      }
+
+      function desenhar(f: Ficha) {
+        if (f.estado === 'indisponivel' || !f.codigo) return mostrar('indisponivel');
+        const selo = $('selo-codigo');
+        selo.textContent = `Plaquinha ${f.codigo}`;
+        selo.hidden = false;
+
+        const pet = f.pet;
+        if (f.estado === 'desligada' || !pet?.nome) {
+          texto('f-titulo', 'Este pet tem família');
+          texto('f-sub', 'O tutor preferiu não mostrar os dados do pet. Se ele estiver perdido, avise o tutor aqui embaixo.');
+        } else {
+          texto('f-titulo', pet.nome);
+          texto('f-sub', null);
+        }
+        const ul = $('f-etiquetas');
+        ul.replaceChildren(...etiquetas(pet).map((e) => {
+          const li = document.createElement('li');
+          li.textContent = e;
+          return li;
+        }));
+        ul.hidden = !ul.children.length;
+
+        const completa = f.estado === 'completa';
+        texto('f-alergias', completa && pet?.alergias ? `Alergias: ${pet.alergias}` : null);
+        texto('f-condicoes', completa && pet?.condicoes ? `Saúde: ${pet.condicoes}` : null);
+        $('f-saude').hidden = !(completa && (pet?.alergias || pet?.condicoes));
+        texto('f-tutor', completa && pet?.tutor ? `Tutor: ${pet.tutor}` : null);
+
+        const numero = f.contato?.whatsapp;
+        $('achei-ativo').hidden = !numero;
+        $('achei-fora').hidden = !!numero;
+        $('tutor-link-wrap').hidden = !numero;
+        if (numero) {
+          const botao = $<HTMLAnchorElement>('botao-achei');
+          const recado = $<HTMLTextAreaElement>('recado');
+          const atualizar = () => { botao.href = linkWhatsApp(numero, textoAchei(f.codigo!, recado.value)); };
+          recado.addEventListener('input', atualizar);
+          atualizar();
+          $<HTMLAnchorElement>('tutor-link').href = linkWhatsApp(numero, textoFicha(f.codigo));
+        }
+        document.title = f.estado !== 'desligada' && pet?.nome ? `${pet.nome} · ficha do pet` : 'Ficha do pet · PetCare Hub';
+        mostrar('ficha');
+      }
+
+      async function carregar(codigo: string) {
+        mostrar('carregando');
+        try {
+          const r = await fetch(`${URL_SB}/rest/v1/rpc/ficha_publica`, {
+            method: 'POST',
+            headers: { apikey: CHAVE, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ p_ref: codigo }),
+          });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          desenhar(lerResposta(await r.json()));
+        } catch {
+          mostrar('erro');
+        }
+      }
+
+      const codigo = codigoDaUrl(location.pathname, location.search);
+      if (codigo === null) {
+        mostrar('inicio');
+      } else if (codigo === 'INVALIDO') {
+        mostrar('indisponivel');
+      } else {
+        carregar(codigo);
+        $('tentar').addEventListener('click', () => carregar(codigo));
+      }
+
+      $<HTMLFormElement>('form-codigo').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const c = codigoDaUrl('/' + $<HTMLInputElement>('campo-codigo').value);
+        if (c && c !== 'INVALIDO') location.href = '/' + c;
+        else mostrar('indisponivel');
+      });
+    </script>
+
+    <style is:global>
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--pc-espuma);
+        color: var(--pc-tinta);
+        font: 400 var(--pc-t-base)/1.55 var(--pc-fonte-texto);
+      }
+      .pagina {
+        max-width: 480px;
+        margin: 0 auto;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-block: max(20px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-bottom, 0px));
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      .topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      /* Logo: 32 px de altura (mínimo da marca: 24 px com detalhes). */
+      .marca { display: flex; flex: 0 0 auto; }
+      .marca img { display: block; height: 32px; width: auto; }
+      .selo {
+        font: 500 var(--pc-t-xs)/1 var(--pc-fonte-mono);
+        letter-spacing: 0.08em;
+        color: var(--pc-tinta-suave);
+        border: 1px solid var(--pc-linha);
+        border-radius: 999px;
+        padding: 6px 10px;
+      }
+      main { display: flex; flex-direction: column; gap: 16px; }
+      #v-ficha { display: flex; flex-direction: column; gap: 16px; }
+      #v-ficha[hidden] { display: none; }
+      .cartao {
+        background: var(--pc-superficie);
+        border: 1px solid var(--pc-linha);
+        border-radius: var(--pc-raio);
+        padding: 22px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      h1, h2 { margin: 0; font-family: var(--pc-fonte-display); font-weight: 400; text-wrap: balance; }
+      h1 { font-size: var(--pc-t-2xl); line-height: 1.15; }
+      .ficha h1 { font-size: var(--pc-t-3xl); }
+      h2 { font-size: var(--pc-t-xl); line-height: 1.2; }
+      p { margin: 0; }
+      .sub { color: var(--pc-tinta-suave); }
+      .eyebrow {
+        font: 500 var(--pc-t-xs)/1 var(--pc-fonte-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--pc-tinta-suave);
+      }
+      .carregando { color: var(--pc-tinta-suave); }
+      .etiquetas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+      .etiquetas li {
+        background: var(--pc-azul-claro);
+        color: var(--pc-tinta);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: var(--pc-t-sm);
+        font-weight: 600;
+      }
+      .saude {
+        border-left: 4px solid var(--pc-toalha);
+        background: var(--pc-espuma);
+        border-radius: 0 var(--pc-raio-sm) var(--pc-raio-sm) 0;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .saude[hidden], [hidden] { display: none !important; }
+      .tutor { font-weight: 600; }
+      .achei { border-color: var(--pc-azul); }
+      label { font-weight: 600; font-size: var(--pc-t-sm); }
+      textarea, input {
+        width: 100%;
+        font: inherit;
+        color: var(--pc-tinta);
+        background: var(--pc-espuma);
+        border: 1px solid var(--pc-linha);
+        border-radius: var(--pc-raio-sm);
+        padding: 10px 12px;
+      }
+      textarea { resize: vertical; min-height: 84px; }
+      input { font-family: var(--pc-fonte-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+      .linha { display: flex; gap: 8px; }
+      .linha input { min-width: 0; flex: 1; }
+      .codigo-form { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+      .botao {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 10px 18px;
+        text-align: center;
+        border: 0;
+        border-radius: var(--pc-raio-sm);
+        background: var(--pc-azul);
+        color: var(--pc-sobre-azul);
+        font: 700 var(--pc-t-base)/1.2 var(--pc-fonte-texto);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .botao:hover { background: var(--pc-azul-forte); }
+      .botao-grande { width: 100%; min-height: 54px; font-size: var(--pc-t-lg); text-wrap: balance; }
+      .aviso { font-size: var(--pc-t-sm); color: var(--pc-tinta-suave); }
+      .link { color: var(--pc-azul); font-weight: 600; }
+      .rodape-tutor { text-align: center; font-size: var(--pc-t-sm); color: var(--pc-tinta-suave); }
+      .rodape { margin-top: auto; font-size: var(--pc-t-xs); color: var(--pc-tinta-suave); text-align: center; }
+      a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible {
+        outline: 3px solid var(--pc-toalha);
+        outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
+  </body>
+</html>

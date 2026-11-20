@@ -1,0 +1,26 @@
+{
+  "name": "@petcare-hub/pet",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Ficha pública do pet (pet.petcarehub.com.br/{codigo})",
+  "engines": {
+    "node": ">=20.3"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@fontsource-variable/figtree": "^5.2.0",
+    "@fontsource/jetbrains-mono": "^5.2.0",
+    "@fontsource/young-serif": "^5.2.0",
+    "astro": "^5.14.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.0"
+  }
+}
