@@ -24,7 +24,7 @@ const ORIGENS = new Set([
   'https://petcare-hub-painel.pages.dev',
   'http://localhost:5173',
 ]);
-const PAPEIS = new Set(['dono', 'gerente', 'recepcao', 'profissional']);
+const PAPEIS = new Set(['dono', 'gerente', 'recepcao', 'profissional', 'estoquista']);
 const SITE = Deno.env.get('PETCARE_SITE_URL') ?? 'https://app.petcarehub.com.br';
 
 function cors(origem: string | null): Record<string, string> {

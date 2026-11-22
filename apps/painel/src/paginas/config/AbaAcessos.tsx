@@ -17,6 +17,7 @@ const PAPEIS: [Papel, string][] = [
   ['gerente', 'Gerente'],
   ['recepcao', 'Recepção'],
   ['profissional', 'Profissional'],
+  ['estoquista', 'Estoquista'],
 ];
 
 interface RespostaConvite { status: 'convidado' | 'vinculado'; user_id: string; mensagem: string }

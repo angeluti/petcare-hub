@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      achados: {
+        Row: {
+          criado_em: string
+          evidencia: Json
+          id: string
+          mensagem: string | null
+          pet_id: string | null
+          plaquinha_id: string | null
+          resultado: string
+          telefone_achador: string
+        }
+        Insert: {
+          criado_em?: string
+          evidencia?: Json
+          id?: string
+          mensagem?: string | null
+          pet_id?: string | null
+          plaquinha_id?: string | null
+          resultado: string
+          telefone_achador: string
+        }
+        Update: {
+          criado_em?: string
+          evidencia?: Json
+          id?: string
+          mensagem?: string | null
+          pet_id?: string | null
+          plaquinha_id?: string | null
+          resultado?: string
+          telefone_achador?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achados_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achados_plaquinha_id_fkey"
+            columns: ["plaquinha_id"]
+            isOneToOne: false
+            referencedRelation: "plaquinhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agendamento_itens: {
         Row: {
           agendamento_id: string
@@ -237,6 +285,7 @@ export type Database = {
           conexao_alertado_em: string | null
           conexao_status: string
           conexao_verificada_em: string | null
+          instancia: string | null
           limite_msgs_auto_semana: number
           mensagens: Json
           meta_phone_number_id: string | null
@@ -257,6 +306,7 @@ export type Database = {
           conexao_alertado_em?: string | null
           conexao_status?: string
           conexao_verificada_em?: string | null
+          instancia?: string | null
           limite_msgs_auto_semana?: number
           mensagens?: Json
           meta_phone_number_id?: string | null
@@ -277,6 +327,7 @@ export type Database = {
           conexao_alertado_em?: string | null
           conexao_status?: string
           conexao_verificada_em?: string | null
+          instancia?: string | null
           limite_msgs_auto_semana?: number
           mensagens?: Json
           meta_phone_number_id?: string | null
@@ -357,95 +408,62 @@ export type Database = {
           },
         ]
       }
-      compra_itens: {
+      canais_plataforma: {
         Row: {
-          compra_id: string
-          custo_unitario: number
-          id: string
-          insumo_id: string
-          petshop_id: string
-          quantidade: number
+          ativo: boolean
+          atualizado_em: string
+          canal: string
+          conexao_alertado_em: string | null
+          conexao_status: string
+          conexao_verificada_em: string | null
+          funcao: string
+          instancia: string | null
+          telefone_wp: string | null
         }
         Insert: {
-          compra_id: string
-          custo_unitario: number
-          id?: string
-          insumo_id: string
-          petshop_id: string
-          quantidade: number
+          ativo?: boolean
+          atualizado_em?: string
+          canal?: string
+          conexao_alertado_em?: string | null
+          conexao_status?: string
+          conexao_verificada_em?: string | null
+          funcao: string
+          instancia?: string | null
+          telefone_wp?: string | null
         }
         Update: {
-          compra_id?: string
-          custo_unitario?: number
-          id?: string
-          insumo_id?: string
-          petshop_id?: string
-          quantidade?: number
+          ativo?: boolean
+          atualizado_em?: string
+          canal?: string
+          conexao_alertado_em?: string | null
+          conexao_status?: string
+          conexao_verificada_em?: string | null
+          funcao?: string
+          instancia?: string | null
+          telefone_wp?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "compra_itens_compra_id_petshop_id_fkey"
-            columns: ["compra_id", "petshop_id"]
-            isOneToOne: false
-            referencedRelation: "compras"
-            referencedColumns: ["id", "petshop_id"]
-          },
-          {
-            foreignKeyName: "compra_itens_insumo_id_petshop_id_fkey"
-            columns: ["insumo_id", "petshop_id"]
-            isOneToOne: false
-            referencedRelation: "insumos"
-            referencedColumns: ["id", "petshop_id"]
-          },
-        ]
+        Relationships: []
       }
-      compras: {
+      central_conversas: {
         Row: {
-          data_pedido: string | null
-          data_prevista: string | null
-          data_recebida: string | null
-          fornecedor_id: string | null
-          id: string
-          petshop_id: string
-          status: string
-          total: number
+          atualizado_em: string
+          dados: Json
+          estado: string
+          telefone: string
         }
         Insert: {
-          data_pedido?: string | null
-          data_prevista?: string | null
-          data_recebida?: string | null
-          fornecedor_id?: string | null
-          id?: string
-          petshop_id: string
-          status?: string
-          total?: number
+          atualizado_em?: string
+          dados?: Json
+          estado?: string
+          telefone: string
         }
         Update: {
-          data_pedido?: string | null
-          data_prevista?: string | null
-          data_recebida?: string | null
-          fornecedor_id?: string | null
-          id?: string
-          petshop_id?: string
-          status?: string
-          total?: number
+          atualizado_em?: string
+          dados?: Json
+          estado?: string
+          telefone?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "compras_fornecedor_id_petshop_id_fkey"
-            columns: ["fornecedor_id", "petshop_id"]
-            isOneToOne: false
-            referencedRelation: "fornecedores"
-            referencedColumns: ["id", "petshop_id"]
-          },
-          {
-            foreignKeyName: "compras_petshop_id_fkey"
-            columns: ["petshop_id"]
-            isOneToOne: false
-            referencedRelation: "petshops"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       consentimentos: {
         Row: {
@@ -498,6 +516,198 @@ export type Database = {
           },
         ]
       }
+      contas_pagar: {
+        Row: {
+          baixado_por: string | null
+          categoria_id: string
+          criado_em: string
+          criado_por: string | null
+          descricao: string
+          documento: string | null
+          forma_pagamento: string | null
+          fornecedor_id: string | null
+          grupo_id: string
+          id: string
+          motivo: string | null
+          observacao: string | null
+          pago_em: string | null
+          parcela: number
+          parcelas: number
+          petshop_id: string
+          recebimento_id: string | null
+          status: string
+          valor: number
+          valor_pago: number | null
+          vencimento: string
+        }
+        Insert: {
+          baixado_por?: string | null
+          categoria_id: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao: string
+          documento?: string | null
+          forma_pagamento?: string | null
+          fornecedor_id?: string | null
+          grupo_id: string
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          pago_em?: string | null
+          parcela?: number
+          parcelas?: number
+          petshop_id: string
+          recebimento_id?: string | null
+          status?: string
+          valor: number
+          valor_pago?: number | null
+          vencimento: string
+        }
+        Update: {
+          baixado_por?: string | null
+          categoria_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string
+          documento?: string | null
+          forma_pagamento?: string | null
+          fornecedor_id?: string | null
+          grupo_id?: string
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          pago_em?: string | null
+          parcela?: number
+          parcelas?: number
+          petshop_id?: string
+          recebimento_id?: string | null
+          status?: string
+          valor?: number
+          valor_pago?: number | null
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_categoria_id_petshop_id_fkey"
+            columns: ["categoria_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "financeiro_categorias"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_fornecedor_id_petshop_id_fkey"
+            columns: ["fornecedor_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_recebimento_id_petshop_id_fkey"
+            columns: ["recebimento_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "recebimentos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      contas_receber: {
+        Row: {
+          baixado_por: string | null
+          categoria_id: string
+          criado_em: string
+          criado_por: string | null
+          descricao: string
+          documento: string | null
+          forma_pagamento: string | null
+          grupo_id: string
+          id: string
+          motivo: string | null
+          observacao: string | null
+          parcela: number
+          parcelas: number
+          petshop_id: string
+          recebido_em: string | null
+          status: string
+          tutor_id: string | null
+          valor: number
+          valor_recebido: number | null
+          vencimento: string
+        }
+        Insert: {
+          baixado_por?: string | null
+          categoria_id: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao: string
+          documento?: string | null
+          forma_pagamento?: string | null
+          grupo_id: string
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          parcela?: number
+          parcelas?: number
+          petshop_id: string
+          recebido_em?: string | null
+          status?: string
+          tutor_id?: string | null
+          valor: number
+          valor_recebido?: number | null
+          vencimento: string
+        }
+        Update: {
+          baixado_por?: string | null
+          categoria_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string
+          documento?: string | null
+          forma_pagamento?: string | null
+          grupo_id?: string
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          parcela?: number
+          parcelas?: number
+          petshop_id?: string
+          recebido_em?: string | null
+          status?: string
+          tutor_id?: string | null
+          valor?: number
+          valor_recebido?: number | null
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_receber_categoria_id_petshop_id_fkey"
+            columns: ["categoria_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "financeiro_categorias"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "contas_receber_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_tutor_id_petshop_id_fkey"
+            columns: ["tutor_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_petshop"
+            referencedColumns: ["tutor_id", "petshop_id"]
+          },
+        ]
+      }
       custos_mensais: {
         Row: {
           categoria: string
@@ -533,63 +743,240 @@ export type Database = {
           },
         ]
       }
-      estoque_movimentos: {
+      documento_sequencias: {
         Row: {
-          compra_id: string | null
-          criado_por: string | null
-          custo_unitario: number | null
-          id: string
-          insumo_id: string
-          ocorrido_em: string
           petshop_id: string
-          quantidade: number
-          requisicao_id: string | null
+          tipo: string
+          ultimo: number
+        }
+        Insert: {
+          petshop_id: string
+          tipo: string
+          ultimo?: number
+        }
+        Update: {
+          petshop_id?: string
+          tipo?: string
+          ultimo?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_sequencias_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_locais: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome: string
+          padrao_entrada: boolean
+          padrao_requisicao: boolean
+          petshop_id: string
           tipo: string
         }
         Insert: {
-          compra_id?: string | null
-          criado_por?: string | null
-          custo_unitario?: number | null
+          ativo?: boolean
+          criado_em?: string
           id?: string
-          insumo_id: string
-          ocorrido_em?: string
+          nome: string
+          padrao_entrada?: boolean
+          padrao_requisicao?: boolean
           petshop_id: string
-          quantidade: number
-          requisicao_id?: string | null
-          tipo: string
+          tipo?: string
         }
         Update: {
-          compra_id?: string | null
-          criado_por?: string | null
-          custo_unitario?: number | null
+          ativo?: boolean
+          criado_em?: string
           id?: string
-          insumo_id?: string
-          ocorrido_em?: string
+          nome?: string
+          padrao_entrada?: boolean
+          padrao_requisicao?: boolean
           petshop_id?: string
-          quantidade?: number
-          requisicao_id?: string | null
           tipo?: string
         }
         Relationships: [
           {
-            foreignKeyName: "estoque_movimentos_compra_id_fkey"
-            columns: ["compra_id"]
+            foreignKeyName: "estoque_locais_petshop_id_fkey"
+            columns: ["petshop_id"]
             isOneToOne: false
-            referencedRelation: "compras"
+            referencedRelation: "petshops"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      estoque_movimentos: {
+        Row: {
+          criado_por: string | null
+          custo_unitario: number
+          id: string
+          inventario_id: string | null
+          local_id: string
+          ocorrido_em: string
+          petshop_id: string
+          produto_id: string
+          quantidade: number
+          recebimento_id: string | null
+          requisicao_id: string | null
+          saldo_apos: number
+          tipo: string
+          transferencia_id: string | null
+        }
+        Insert: {
+          criado_por?: string | null
+          custo_unitario: number
+          id?: string
+          inventario_id?: string | null
+          local_id: string
+          ocorrido_em?: string
+          petshop_id: string
+          produto_id: string
+          quantidade: number
+          recebimento_id?: string | null
+          requisicao_id?: string | null
+          saldo_apos: number
+          tipo: string
+          transferencia_id?: string | null
+        }
+        Update: {
+          criado_por?: string | null
+          custo_unitario?: number
+          id?: string
+          inventario_id?: string | null
+          local_id?: string
+          ocorrido_em?: string
+          petshop_id?: string
+          produto_id?: string
+          quantidade?: number
+          recebimento_id?: string | null
+          requisicao_id?: string | null
+          saldo_apos?: number
+          tipo?: string
+          transferencia_id?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "estoque_movimentos_insumo_id_petshop_id_fkey"
-            columns: ["insumo_id", "petshop_id"]
+            foreignKeyName: "estoque_movimentos_inventario_id_petshop_id_fkey"
+            columns: ["inventario_id", "petshop_id"]
             isOneToOne: false
-            referencedRelation: "insumos"
+            referencedRelation: "inventarios"
             referencedColumns: ["id", "petshop_id"]
           },
           {
-            foreignKeyName: "estoque_movimentos_requisicao_id_fkey"
-            columns: ["requisicao_id"]
+            foreignKeyName: "estoque_movimentos_local_id_petshop_id_fkey"
+            columns: ["local_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentos_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentos_recebimento_id_petshop_id_fkey"
+            columns: ["recebimento_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "recebimentos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentos_requisicao_id_petshop_id_fkey"
+            columns: ["requisicao_id", "petshop_id"]
             isOneToOne: false
             referencedRelation: "requisicoes"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentos_transferencia_id_petshop_id_fkey"
+            columns: ["transferencia_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "transferencias"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      estoque_saldos: {
+        Row: {
+          atualizado_em: string
+          local_id: string
+          minimo: number | null
+          petshop_id: string
+          produto_id: string
+          quantidade: number
+        }
+        Insert: {
+          atualizado_em?: string
+          local_id: string
+          minimo?: number | null
+          petshop_id: string
+          produto_id: string
+          quantidade?: number
+        }
+        Update: {
+          atualizado_em?: string
+          local_id?: string
+          minimo?: number | null
+          petshop_id?: string
+          produto_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_saldos_local_id_petshop_id_fkey"
+            columns: ["local_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      financeiro_categorias: {
+        Row: {
+          ativo: boolean
+          codigo: string | null
+          id: string
+          nome: string
+          petshop_id: string
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo?: string | null
+          id?: string
+          nome: string
+          petshop_id: string
+          tipo: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string | null
+          id?: string
+          nome?: string
+          petshop_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_categorias_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
             referencedColumns: ["id"]
           },
         ]
@@ -639,26 +1026,41 @@ export type Database = {
         Row: {
           ativo: boolean
           contato: string | null
+          criado_em: string
+          documento: string | null
+          email: string | null
           id: string
           nome: string
+          observacao: string | null
           petshop_id: string
           prazo_entrega_dias: number | null
+          telefone: string | null
         }
         Insert: {
           ativo?: boolean
           contato?: string | null
+          criado_em?: string
+          documento?: string | null
+          email?: string | null
           id?: string
           nome: string
+          observacao?: string | null
           petshop_id: string
           prazo_entrega_dias?: number | null
+          telefone?: string | null
         }
         Update: {
           ativo?: boolean
           contato?: string | null
+          criado_em?: string
+          documento?: string | null
+          email?: string | null
           id?: string
           nome?: string
+          observacao?: string | null
           petshop_id?: string
           prazo_entrega_dias?: number | null
+          telefone?: string | null
         }
         Relationships: [
           {
@@ -840,50 +1242,104 @@ export type Database = {
           },
         ]
       }
-      insumos: {
+      inventario_itens: {
         Row: {
-          ativo: boolean
-          custo_medio: number
-          estoque_atual: number
-          estoque_minimo: number
-          fornecedor_padrao_id: string | null
+          ajuste: number | null
+          contado_em: string | null
+          contado_por: string | null
           id: string
-          nome: string
+          inventario_id: string
           petshop_id: string
-          unidade: string
+          produto_id: string
+          qtd_contada: number | null
+          saldo_sistema: number | null
         }
         Insert: {
-          ativo?: boolean
-          custo_medio?: number
-          estoque_atual?: number
-          estoque_minimo?: number
-          fornecedor_padrao_id?: string | null
+          ajuste?: number | null
+          contado_em?: string | null
+          contado_por?: string | null
           id?: string
-          nome: string
+          inventario_id: string
           petshop_id: string
-          unidade: string
+          produto_id: string
+          qtd_contada?: number | null
+          saldo_sistema?: number | null
         }
         Update: {
-          ativo?: boolean
-          custo_medio?: number
-          estoque_atual?: number
-          estoque_minimo?: number
-          fornecedor_padrao_id?: string | null
+          ajuste?: number | null
+          contado_em?: string | null
+          contado_por?: string | null
           id?: string
-          nome?: string
+          inventario_id?: string
           petshop_id?: string
-          unidade?: string
+          produto_id?: string
+          qtd_contada?: number | null
+          saldo_sistema?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "insumos_fornecedor_padrao_id_petshop_id_fkey"
-            columns: ["fornecedor_padrao_id", "petshop_id"]
+            foreignKeyName: "inventario_itens_inventario_id_petshop_id_fkey"
+            columns: ["inventario_id", "petshop_id"]
             isOneToOne: false
-            referencedRelation: "fornecedores"
+            referencedRelation: "inventarios"
             referencedColumns: ["id", "petshop_id"]
           },
           {
-            foreignKeyName: "insumos_petshop_id_fkey"
+            foreignKeyName: "inventario_itens_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      inventarios: {
+        Row: {
+          aberto_em: string
+          aberto_por: string | null
+          fechado_em: string | null
+          fechado_por: string | null
+          id: string
+          local_id: string
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          status: string
+        }
+        Insert: {
+          aberto_em?: string
+          aberto_por?: string | null
+          fechado_em?: string | null
+          fechado_por?: string | null
+          id?: string
+          local_id: string
+          numero: number
+          observacao?: string | null
+          petshop_id: string
+          status?: string
+        }
+        Update: {
+          aberto_em?: string
+          aberto_por?: string | null
+          fechado_em?: string | null
+          fechado_por?: string | null
+          id?: string
+          local_id?: string
+          numero?: number
+          observacao?: string | null
+          petshop_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventarios_local_id_petshop_id_fkey"
+            columns: ["local_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "inventarios_petshop_id_fkey"
             columns: ["petshop_id"]
             isOneToOne: false
             referencedRelation: "petshops"
@@ -1048,6 +1504,127 @@ export type Database = {
           },
         ]
       }
+      pedido_compra_itens: {
+        Row: {
+          custo_previsto: number
+          fator: number
+          id: string
+          pedido_id: string
+          petshop_id: string
+          produto_id: string
+          produto_unidade_id: string
+          qtd_pedida: number
+          qtd_recebida: number
+          unidade_rotulo: string
+        }
+        Insert: {
+          custo_previsto?: number
+          fator: number
+          id?: string
+          pedido_id: string
+          petshop_id: string
+          produto_id: string
+          produto_unidade_id: string
+          qtd_pedida: number
+          qtd_recebida?: number
+          unidade_rotulo: string
+        }
+        Update: {
+          custo_previsto?: number
+          fator?: number
+          id?: string
+          pedido_id?: string
+          petshop_id?: string
+          produto_id?: string
+          produto_unidade_id?: string
+          qtd_pedida?: number
+          qtd_recebida?: number
+          unidade_rotulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_compra_itens_pedido_id_petshop_id_fkey"
+            columns: ["pedido_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_compra"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "pedido_compra_itens_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "pedido_compra_itens_produto_unidade_id_petshop_id_fkey"
+            columns: ["produto_unidade_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produto_unidades"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      pedidos_compra: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          data_prevista: string | null
+          enviado_em: string | null
+          finalizado_em: string | null
+          fornecedor_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          status: string
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          data_prevista?: string | null
+          enviado_em?: string | null
+          finalizado_em?: string | null
+          fornecedor_id: string
+          id?: string
+          motivo?: string | null
+          numero: number
+          observacao?: string | null
+          petshop_id: string
+          status?: string
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          data_prevista?: string | null
+          enviado_em?: string | null
+          finalizado_em?: string | null
+          fornecedor_id?: string
+          id?: string
+          motivo?: string | null
+          numero?: number
+          observacao?: string | null
+          petshop_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_compra_fornecedor_id_petshop_id_fkey"
+            columns: ["fornecedor_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "pedidos_compra_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_eventos: {
         Row: {
           agendamento_id: string | null
@@ -1167,7 +1744,10 @@ export type Database = {
           criado_em: string
           criado_por_petshop_id: string | null
           especie: string
-          ficha_publica: Json
+          ficha_alterada_em: string | null
+          ficha_alterada_origem: string | null
+          ficha_alterada_por: string | null
+          ficha_nivel: string
           foto_url: string | null
           id: string
           nascimento: string | null
@@ -1186,7 +1766,10 @@ export type Database = {
           criado_em?: string
           criado_por_petshop_id?: string | null
           especie?: string
-          ficha_publica?: Json
+          ficha_alterada_em?: string | null
+          ficha_alterada_origem?: string | null
+          ficha_alterada_por?: string | null
+          ficha_nivel?: string
           foto_url?: string | null
           id?: string
           nascimento?: string | null
@@ -1205,7 +1788,10 @@ export type Database = {
           criado_em?: string
           criado_por_petshop_id?: string | null
           especie?: string
-          ficha_publica?: Json
+          ficha_alterada_em?: string | null
+          ficha_alterada_origem?: string | null
+          ficha_alterada_por?: string | null
+          ficha_nivel?: string
           foto_url?: string | null
           id?: string
           nascimento?: string | null
@@ -1326,6 +1912,7 @@ export type Database = {
           criado_em: string
           id: string
           nome: string | null
+          papeis_adicionais: string[]
           papel: string
           petshop_id: string
           user_id: string
@@ -1335,6 +1922,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nome?: string | null
+          papeis_adicionais?: string[]
           papel: string
           petshop_id: string
           user_id: string
@@ -1344,6 +1932,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nome?: string | null
+          papeis_adicionais?: string[]
           papel?: string
           petshop_id?: string
           user_id?: string
@@ -1496,10 +2085,17 @@ export type Database = {
           entregue_em: string | null
           id: string
           kit: string
+          leituras: number
           material: string | null
           pet_id: string | null
           petshop_id: string | null
-          qr_ativo: boolean
+          qr_ativo: boolean | null
+          status: string
+          status_alterado_em: string | null
+          status_motivo: string | null
+          status_origem: string | null
+          status_por: string | null
+          ultima_leitura_em: string | null
           valor: number | null
         }
         Insert: {
@@ -1508,10 +2104,17 @@ export type Database = {
           entregue_em?: string | null
           id?: string
           kit: string
+          leituras?: number
           material?: string | null
           pet_id?: string | null
           petshop_id?: string | null
-          qr_ativo?: boolean
+          qr_ativo?: boolean | null
+          status?: string
+          status_alterado_em?: string | null
+          status_motivo?: string | null
+          status_origem?: string | null
+          status_por?: string | null
+          ultima_leitura_em?: string | null
           valor?: number | null
         }
         Update: {
@@ -1520,10 +2123,17 @@ export type Database = {
           entregue_em?: string | null
           id?: string
           kit?: string
+          leituras?: number
           material?: string | null
           pet_id?: string | null
           petshop_id?: string | null
-          qr_ativo?: boolean
+          qr_ativo?: boolean | null
+          status?: string
+          status_alterado_em?: string | null
+          status_motivo?: string | null
+          status_origem?: string | null
+          status_por?: string | null
+          ultima_leitura_em?: string | null
           valor?: number | null
         }
         Relationships: [
@@ -1536,6 +2146,290 @@ export type Database = {
           },
           {
             foreignKeyName: "plaquinhas_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_custos: {
+        Row: {
+          atualizado_em: string
+          custo_medio: number
+          petshop_id: string
+          produto_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          custo_medio?: number
+          petshop_id: string
+          produto_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          custo_medio?: number
+          petshop_id?: string
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_custos_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      produto_unidades: {
+        Row: {
+          ativo: boolean
+          eh_base: boolean
+          fator: number
+          id: string
+          petshop_id: string
+          produto_id: string
+          rotulo: string
+          usa_compra: boolean
+          usa_requisicao: boolean
+        }
+        Insert: {
+          ativo?: boolean
+          eh_base?: boolean
+          fator: number
+          id?: string
+          petshop_id: string
+          produto_id: string
+          rotulo: string
+          usa_compra?: boolean
+          usa_requisicao?: boolean
+        }
+        Update: {
+          ativo?: boolean
+          eh_base?: boolean
+          fator?: number
+          id?: string
+          petshop_id?: string
+          produto_id?: string
+          rotulo?: string
+          usa_compra?: boolean
+          usa_requisicao?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_unidades_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          categoria: string | null
+          codigo: string | null
+          criado_em: string
+          ean: string | null
+          fornecedor_padrao_id: string | null
+          id: string
+          marca: string | null
+          nome: string
+          petshop_id: string
+          preco_venda: number | null
+          unidade_base: string
+          usa_como_insumo: boolean
+          usa_como_venda: boolean
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          categoria?: string | null
+          codigo?: string | null
+          criado_em?: string
+          ean?: string | null
+          fornecedor_padrao_id?: string | null
+          id?: string
+          marca?: string | null
+          nome: string
+          petshop_id: string
+          preco_venda?: number | null
+          unidade_base: string
+          usa_como_insumo?: boolean
+          usa_como_venda?: boolean
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          categoria?: string | null
+          codigo?: string | null
+          criado_em?: string
+          ean?: string | null
+          fornecedor_padrao_id?: string | null
+          id?: string
+          marca?: string | null
+          nome?: string
+          petshop_id?: string
+          preco_venda?: number | null
+          unidade_base?: string
+          usa_como_insumo?: boolean
+          usa_como_venda?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_fornecedor_padrao_id_petshop_id_fkey"
+            columns: ["fornecedor_padrao_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "produtos_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recebimento_itens: {
+        Row: {
+          custo_unitario: number
+          fator: number
+          id: string
+          pedido_item_id: string | null
+          petshop_id: string
+          produto_id: string
+          produto_unidade_id: string
+          quantidade: number
+          recebimento_id: string
+          unidade_rotulo: string
+          valor_total: number
+        }
+        Insert: {
+          custo_unitario: number
+          fator: number
+          id?: string
+          pedido_item_id?: string | null
+          petshop_id: string
+          produto_id: string
+          produto_unidade_id: string
+          quantidade: number
+          recebimento_id: string
+          unidade_rotulo: string
+          valor_total: number
+        }
+        Update: {
+          custo_unitario?: number
+          fator?: number
+          id?: string
+          pedido_item_id?: string | null
+          petshop_id?: string
+          produto_id?: string
+          produto_unidade_id?: string
+          quantidade?: number
+          recebimento_id?: string
+          unidade_rotulo?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimento_itens_pedido_item_id_petshop_id_fkey"
+            columns: ["pedido_item_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "pedido_compra_itens"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "recebimento_itens_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "recebimento_itens_produto_unidade_id_petshop_id_fkey"
+            columns: ["produto_unidade_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produto_unidades"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "recebimento_itens_recebimento_id_petshop_id_fkey"
+            columns: ["recebimento_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "recebimentos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      recebimentos: {
+        Row: {
+          fornecedor_id: string | null
+          id: string
+          local_id: string
+          nf_numero: string | null
+          numero: number
+          observacao: string | null
+          pedido_id: string | null
+          petshop_id: string
+          recebido_em: string
+          recebido_por: string | null
+          valor_total: number
+        }
+        Insert: {
+          fornecedor_id?: string | null
+          id?: string
+          local_id: string
+          nf_numero?: string | null
+          numero: number
+          observacao?: string | null
+          pedido_id?: string | null
+          petshop_id: string
+          recebido_em?: string
+          recebido_por?: string | null
+          valor_total?: number
+        }
+        Update: {
+          fornecedor_id?: string | null
+          id?: string
+          local_id?: string
+          nf_numero?: string | null
+          numero?: number
+          observacao?: string | null
+          pedido_id?: string | null
+          petshop_id?: string
+          recebido_em?: string
+          recebido_por?: string | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_fornecedor_id_petshop_id_fkey"
+            columns: ["fornecedor_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "recebimentos_local_id_petshop_id_fkey"
+            columns: ["local_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "recebimentos_pedido_id_petshop_id_fkey"
+            columns: ["pedido_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_compra"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "recebimentos_petshop_id_fkey"
             columns: ["petshop_id"]
             isOneToOne: false
             referencedRelation: "petshops"
@@ -1710,32 +2604,61 @@ export type Database = {
       }
       requisicao_itens: {
         Row: {
+          fator: number
           id: string
-          insumo_id: string
+          item_origem_id: string | null
           petshop_id: string
-          quantidade: number
+          produto_id: string
+          produto_unidade_id: string
+          qtd_atendida: number | null
+          qtd_solicitada: number
           requisicao_id: string
+          unidade_rotulo: string
         }
         Insert: {
+          fator: number
           id?: string
-          insumo_id: string
+          item_origem_id?: string | null
           petshop_id: string
-          quantidade: number
+          produto_id: string
+          produto_unidade_id: string
+          qtd_atendida?: number | null
+          qtd_solicitada: number
           requisicao_id: string
+          unidade_rotulo: string
         }
         Update: {
+          fator?: number
           id?: string
-          insumo_id?: string
+          item_origem_id?: string | null
           petshop_id?: string
-          quantidade?: number
+          produto_id?: string
+          produto_unidade_id?: string
+          qtd_atendida?: number | null
+          qtd_solicitada?: number
           requisicao_id?: string
+          unidade_rotulo?: string
         }
         Relationships: [
           {
-            foreignKeyName: "requisicao_itens_insumo_id_petshop_id_fkey"
-            columns: ["insumo_id", "petshop_id"]
+            foreignKeyName: "requisicao_itens_item_origem_id_petshop_id_fkey"
+            columns: ["item_origem_id", "petshop_id"]
             isOneToOne: false
-            referencedRelation: "insumos"
+            referencedRelation: "requisicao_itens"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "requisicao_itens_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "requisicao_itens_produto_unidade_id_petshop_id_fkey"
+            columns: ["produto_unidade_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produto_unidades"
             referencedColumns: ["id", "petshop_id"]
           },
           {
@@ -1749,30 +2672,67 @@ export type Database = {
       }
       requisicoes: {
         Row: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
           id: string
+          local_id: string
+          motivo: string | null
+          numero: number
           observacao: string | null
           petshop_id: string
           recurso_id: string | null
+          requisicao_origem_id: string | null
           solicitada_em: string
           solicitado_por: string | null
+          status: string
+          tipo: string
         }
         Insert: {
+          concluida_em?: string | null
+          concluido_por?: string | null
+          decidida_em?: string | null
+          decidido_por?: string | null
           id?: string
+          local_id: string
+          motivo?: string | null
+          numero: number
           observacao?: string | null
           petshop_id: string
           recurso_id?: string | null
+          requisicao_origem_id?: string | null
           solicitada_em?: string
           solicitado_por?: string | null
+          status: string
+          tipo: string
         }
         Update: {
+          concluida_em?: string | null
+          concluido_por?: string | null
+          decidida_em?: string | null
+          decidido_por?: string | null
           id?: string
+          local_id?: string
+          motivo?: string | null
+          numero?: number
           observacao?: string | null
           petshop_id?: string
           recurso_id?: string | null
+          requisicao_origem_id?: string | null
           solicitada_em?: string
           solicitado_por?: string | null
+          status?: string
+          tipo?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "requisicoes_local_id_petshop_id_fkey"
+            columns: ["local_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
           {
             foreignKeyName: "requisicoes_petshop_id_fkey"
             columns: ["petshop_id"]
@@ -1785,6 +2745,13 @@ export type Database = {
             columns: ["recurso_id", "petshop_id"]
             isOneToOne: false
             referencedRelation: "recursos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "requisicoes_requisicao_origem_id_petshop_id_fkey"
+            columns: ["requisicao_origem_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "requisicoes"
             referencedColumns: ["id", "petshop_id"]
           },
         ]
@@ -1930,6 +2897,137 @@ export type Database = {
         }
         Relationships: []
       }
+      transferencia_itens: {
+        Row: {
+          fator: number
+          id: string
+          petshop_id: string
+          produto_id: string
+          produto_unidade_id: string
+          qtd_movida: number | null
+          qtd_solicitada: number
+          transferencia_id: string
+          unidade_rotulo: string
+        }
+        Insert: {
+          fator: number
+          id?: string
+          petshop_id: string
+          produto_id: string
+          produto_unidade_id: string
+          qtd_movida?: number | null
+          qtd_solicitada: number
+          transferencia_id: string
+          unidade_rotulo: string
+        }
+        Update: {
+          fator?: number
+          id?: string
+          petshop_id?: string
+          produto_id?: string
+          produto_unidade_id?: string
+          qtd_movida?: number | null
+          qtd_solicitada?: number
+          transferencia_id?: string
+          unidade_rotulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_itens_produto_id_petshop_id_fkey"
+            columns: ["produto_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "transferencia_itens_produto_unidade_id_petshop_id_fkey"
+            columns: ["produto_unidade_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "produto_unidades"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "transferencia_itens_transferencia_id_petshop_id_fkey"
+            columns: ["transferencia_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "transferencias"
+            referencedColumns: ["id", "petshop_id"]
+          },
+        ]
+      }
+      transferencias: {
+        Row: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          destino_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          origem_id: string
+          petshop_id: string
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+        }
+        Insert: {
+          concluida_em?: string | null
+          concluido_por?: string | null
+          decidida_em?: string | null
+          decidido_por?: string | null
+          destino_id: string
+          id?: string
+          motivo?: string | null
+          numero: number
+          observacao?: string | null
+          origem_id: string
+          petshop_id: string
+          solicitada_em?: string
+          solicitado_por?: string | null
+          status: string
+        }
+        Update: {
+          concluida_em?: string | null
+          concluido_por?: string | null
+          decidida_em?: string | null
+          decidido_por?: string | null
+          destino_id?: string
+          id?: string
+          motivo?: string | null
+          numero?: number
+          observacao?: string | null
+          origem_id?: string
+          petshop_id?: string
+          solicitada_em?: string
+          solicitado_por?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencias_destino_id_petshop_id_fkey"
+            columns: ["destino_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "transferencias_origem_id_petshop_id_fkey"
+            columns: ["origem_id", "petshop_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_locais"
+            referencedColumns: ["id", "petshop_id"]
+          },
+          {
+            foreignKeyName: "transferencias_petshop_id_fkey"
+            columns: ["petshop_id"]
+            isOneToOne: false
+            referencedRelation: "petshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_petshop: {
         Row: {
           aceita_mensagens: boolean
@@ -2028,6 +3126,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_gerar_plaquinha: {
+        Args: {
+          p_kit: string
+          p_material?: string
+          p_pet: string
+          p_petshop: string
+          p_valor?: number
+        }
+        Returns: string
+      }
+      admin_lote_plaquinhas: {
+        Args: { p_desde?: string }
+        Returns: {
+          codigo: string
+          criado_em: string
+          kit: string
+          material: string
+          pet: string
+          petshop: string
+        }[]
+      }
       admin_vincular_membro: {
         Args: {
           p_email: string
@@ -2037,7 +3156,20 @@ export type Database = {
         }
         Returns: string
       }
+      administracao_preparar: {
+        Args: { p_petshop: string }
+        Returns: undefined
+      }
       bot_aberto_agora: { Args: { p_petshop: string }; Returns: Json }
+      bot_achado_registrar: {
+        Args: {
+          p_codigo: string
+          p_evidencia?: Json
+          p_mensagem?: string
+          p_telefone: string
+        }
+        Returns: Json
+      }
       bot_agendamentos_em_bloqueio: {
         Args: { p_petshop?: string }
         Returns: {
@@ -2054,9 +3186,18 @@ export type Database = {
         Args: { p_nome: string; p_petshop: string; p_telefone: string }
         Returns: string
       }
+      bot_canal_plataforma: {
+        Args: { p_canal: string; p_instancia: string }
+        Returns: Json
+      }
       bot_cancelar: {
         Args: { p_agendamento: string; p_petshop: string; p_tutor: string }
         Returns: boolean
+      }
+      bot_central_entrada: { Args: { p_telefone: string }; Returns: Json }
+      bot_central_salvar: {
+        Args: { p_dados?: Json; p_estado: string; p_telefone: string }
+        Returns: undefined
       }
       bot_conexao_evento: {
         Args: { p_conectado: boolean; p_detalhe?: string; p_instance: string }
@@ -2076,14 +3217,29 @@ export type Database = {
         Returns: Json
       }
       bot_envio: { Args: { p_petshop: string }; Returns: Json }
+      bot_envio_plataforma: { Args: { p_funcao?: string }; Returns: Json }
+      bot_ficha_consultar: {
+        Args: { p_codigo: string; p_telefone: string }
+        Returns: Json
+      }
+      bot_ficha_definir: {
+        Args: {
+          p_codigo: string
+          p_escolha: string
+          p_evidencia?: Json
+          p_telefone: string
+          p_versao: string
+        }
+        Returns: string
+      }
       bot_instancias_monitoradas: {
         Args: never
         Returns: {
           ativo: boolean
+          canal: string
+          instancia: string
           petshop: string
           petshop_id: string
-          token: string
-          zapi_instance_id: string
         }[]
       }
       bot_lembrete_desmarcar: {
@@ -2097,6 +3253,10 @@ export type Database = {
         Returns: undefined
       }
       bot_petshop_info: { Args: { p_petshop: string }; Returns: Json }
+      bot_petshop_por_canal: {
+        Args: { p_canal: string; p_instancia: string }
+        Returns: string
+      }
       bot_petshop_por_instancia: {
         Args: { p_meta_phone_id?: string; p_zapi_instance?: string }
         Returns: string
@@ -2184,6 +3344,80 @@ export type Database = {
         }
         Returns: string
       }
+      compra_receber: {
+        Args: {
+          p_fornecedor?: string
+          p_itens: Json
+          p_local?: string
+          p_nf?: string
+          p_observacao?: string
+          p_parcelas?: Json
+          p_pedido?: string
+          p_petshop: string
+          p_recebido_em?: string
+        }
+        Returns: Json
+      }
+      conta_baixar: {
+        Args: {
+          p_conta: string
+          p_data?: string
+          p_forma: string
+          p_tipo: string
+          p_valor?: number
+        }
+        Returns: undefined
+      }
+      conta_cancelar: {
+        Args: { p_conta: string; p_motivo: string; p_tipo: string }
+        Returns: undefined
+      }
+      conta_editar: {
+        Args: {
+          p_categoria?: string
+          p_conta: string
+          p_descricao?: string
+          p_observacao?: string
+          p_tipo: string
+          p_valor?: number
+          p_vencimento?: string
+        }
+        Returns: undefined
+      }
+      conta_lancar: {
+        Args: {
+          p_categoria: string
+          p_descricao: string
+          p_documento?: string
+          p_fornecedor?: string
+          p_observacao?: string
+          p_parcelas: Json
+          p_petshop: string
+          p_tipo: string
+          p_tutor?: string
+        }
+        Returns: string
+      }
+      conta_reabrir: {
+        Args: { p_conta: string; p_tipo: string }
+        Returns: undefined
+      }
+      contas_receber_abertas: {
+        Args: { p_petshop: string }
+        Returns: {
+          descricao: string
+          dias_atraso: number
+          id: string
+          origem: string
+          recebido: number
+          saldo: number
+          situacao: string
+          tutor: string
+          tutor_id: string
+          valor: number
+          vencimento: string
+        }[]
+      }
       conversas_pausadas: {
         Args: { p_petshop: string }
         Returns: {
@@ -2197,6 +3431,121 @@ export type Database = {
           tutor_nome: string
           vencida: boolean
         }[]
+      }
+      definir_papeis_adicionais: {
+        Args: { p_membro: string; p_papeis: string[] }
+        Returns: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome: string | null
+          papeis_adicionais: string[]
+          papel: string
+          petshop_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "petshop_membros"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      devolucao_aprovar: {
+        Args: { p_requisicao: string }
+        Returns: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          id: string
+          local_id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          recurso_id: string | null
+          requisicao_origem_id: string | null
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+          tipo: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "requisicoes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      devolucao_criar: {
+        Args: {
+          p_itens: Json
+          p_observacao?: string
+          p_requisicao_origem: string
+        }
+        Returns: string
+      }
+      devolucao_receber: {
+        Args: { p_itens?: Json; p_requisicao: string }
+        Returns: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          id: string
+          local_id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          recurso_id: string | null
+          requisicao_origem_id: string | null
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+          tipo: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "requisicoes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      estoque_avisos: {
+        Args: { p_dias?: number; p_petshop: string }
+        Returns: {
+          cobertura: Json
+          faltante: number
+          local: string
+          local_id: string
+          minimo: number
+          ocorrido_em: string
+          produto: string
+          produto_id: string
+          referencia: string
+          saldo: number
+          tipo: string
+          unidade_base: string
+        }[]
+      }
+      estoque_definir_minimo: {
+        Args: { p_local: string; p_minimo: number; p_produto: string }
+        Returns: {
+          atualizado_em: string
+          local_id: string
+          minimo: number | null
+          petshop_id: string
+          produto_id: string
+          quantidade: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "estoque_saldos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       fazer_checkin: {
         Args: { p_agendamento: string }
@@ -2302,6 +3651,57 @@ export type Database = {
           vagas: number
         }[]
       }
+      inventario_abrir: {
+        Args: {
+          p_local: string
+          p_observacao?: string
+          p_petshop: string
+          p_produtos?: string[]
+        }
+        Returns: string
+      }
+      inventario_cancelar: {
+        Args: { p_inventario: string }
+        Returns: {
+          aberto_em: string
+          aberto_por: string | null
+          fechado_em: string | null
+          fechado_por: string | null
+          id: string
+          local_id: string
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inventarios"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      inventario_contar: {
+        Args: { p_inventario: string; p_itens: Json }
+        Returns: {
+          ajuste: number | null
+          contado_em: string | null
+          contado_por: string | null
+          id: string
+          inventario_id: string
+          petshop_id: string
+          produto_id: string
+          qtd_contada: number | null
+          saldo_sistema: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "inventario_itens"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      inventario_fechar: { Args: { p_inventario: string }; Returns: Json }
       lembretes_pendentes: {
         Args: { p_petshop?: string }
         Returns: {
@@ -2316,7 +3716,20 @@ export type Database = {
           telefone: string
         }[]
       }
+      meus_papeis: { Args: { p_petshop: string }; Returns: string[] }
       minhas_funcionalidades: { Args: { p_petshop: string }; Returns: string[] }
+      painel_ficha_desligar: {
+        Args: { p_pet: string; p_petshop: string }
+        Returns: undefined
+      }
+      painel_plaquinha_desativar: {
+        Args: { p_motivo: string; p_petshop: string; p_plaquinha: string }
+        Returns: undefined
+      }
+      painel_plaquinhas_pet: {
+        Args: { p_pet: string; p_petshop: string }
+        Returns: Json
+      }
       pausar_bot_tutor: {
         Args: { p_petshop: string; p_telefone: string }
         Returns: {
@@ -2339,6 +3752,75 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      pedido_compra_cancelar: {
+        Args: { p_motivo: string; p_pedido: string }
+        Returns: {
+          criado_em: string
+          criado_por: string | null
+          data_prevista: string | null
+          enviado_em: string | null
+          finalizado_em: string | null
+          fornecedor_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pedidos_compra"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pedido_compra_encerrar: {
+        Args: { p_motivo: string; p_pedido: string }
+        Returns: {
+          criado_em: string
+          criado_por: string | null
+          data_prevista: string | null
+          enviado_em: string | null
+          finalizado_em: string | null
+          fornecedor_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pedidos_compra"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pedido_compra_enviar: {
+        Args: { p_pedido: string }
+        Returns: {
+          criado_em: string
+          criado_por: string | null
+          data_prevista: string | null
+          enviado_em: string | null
+          finalizado_em: string | null
+          fornecedor_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pedidos_compra"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       proximos_dias_com_vaga: {
         Args: {
           p_dias?: number
@@ -2352,9 +3834,111 @@ export type Database = {
           horarios: number
         }[]
       }
+      receber_agendamento: {
+        Args: { p_agendamento: string; p_forma: string; p_valor: number }
+        Returns: {
+          atualizado_em: string
+          cancelado_em: string | null
+          cancelado_por: string | null
+          checkin_em: string | null
+          checkout_em: string | null
+          criado_em: string
+          criado_por: string | null
+          encaixe: boolean
+          fim: string
+          id: string
+          inicio: string
+          motivo_cancelamento: string | null
+          observacoes: string | null
+          origem: string
+          pagamento_status: string
+          periodo: unknown
+          pet_id: string
+          petshop_id: string
+          pronto_em: string | null
+          recurso_id: string
+          status: string
+          tutor_id: string
+          valor_total: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "agendamentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       relatorio_poc: {
         Args: { p_ate: string; p_de: string; p_petshop: string }
         Returns: Json
+      }
+      requisicao_atender: {
+        Args: { p_itens?: Json; p_requisicao: string }
+        Returns: Json
+      }
+      requisicao_cancelar: {
+        Args: { p_motivo?: string; p_requisicao: string }
+        Returns: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          id: string
+          local_id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          recurso_id: string | null
+          requisicao_origem_id: string | null
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+          tipo: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "requisicoes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      requisicao_criar: {
+        Args: {
+          p_itens: Json
+          p_local?: string
+          p_observacao?: string
+          p_petshop: string
+          p_recurso?: string
+        }
+        Returns: string
+      }
+      requisicao_recusar: {
+        Args: { p_motivo: string; p_requisicao: string }
+        Returns: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          id: string
+          local_id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          petshop_id: string
+          recurso_id: string | null
+          requisicao_origem_id: string | null
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+          tipo: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "requisicoes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reservar_agendamento: {
         Args: {
@@ -2397,6 +3981,70 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "agendamentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      transferencia_cancelar: {
+        Args: { p_motivo?: string; p_transferencia: string }
+        Returns: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          destino_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          origem_id: string
+          petshop_id: string
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transferencias"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      transferencia_confirmar: {
+        Args: { p_itens?: Json; p_transferencia: string }
+        Returns: Json
+      }
+      transferencia_criar: {
+        Args: {
+          p_destino: string
+          p_itens: Json
+          p_observacao?: string
+          p_origem: string
+          p_petshop: string
+        }
+        Returns: string
+      }
+      transferencia_decidir: {
+        Args: { p_aprovar: boolean; p_motivo?: string; p_transferencia: string }
+        Returns: {
+          concluida_em: string | null
+          concluido_por: string | null
+          decidida_em: string | null
+          decidido_por: string | null
+          destino_id: string
+          id: string
+          motivo: string | null
+          numero: number
+          observacao: string | null
+          origem_id: string
+          petshop_id: string
+          solicitada_em: string
+          solicitado_por: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transferencias"
           isOneToOne: true
           isSetofReturn: false
         }

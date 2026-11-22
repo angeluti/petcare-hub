@@ -3,7 +3,7 @@
 // descrevem o recorte que cada tela pede, incluindo os embeds.
 import type { Porte } from './formato';
 
-export type Papel = 'dono' | 'gerente' | 'recepcao' | 'profissional' | 'veterinario' | 'hospedagem' | 'super_admin';
+export type Papel = 'dono' | 'gerente' | 'recepcao' | 'profissional' | 'veterinario' | 'hospedagem' | 'estoquista' | 'super_admin';
 
 export interface Petshop {
   id: string;
