@@ -64,3 +64,11 @@
 .adm-st-recebido_parcial { background: var(--alerta-suave); color: var(--alerta); border-color: transparent; }
 .adm-st-recebido { background: color-mix(in srgb, var(--pc-ok) 14%, var(--superficie)); color: var(--pc-ok); border-color: transparent; }
 .adm-st-cancelado, .adm-st-encerrado { text-decoration: none; opacity: .8; }
+
+/* Requisições, transferências, inventário */
+.adm-sem-margem { margin: 0; }
+.adm-escolha { display: grid; gap: 4px; max-height: 260px; overflow: auto; padding: 8px; border: 1px solid var(--linha); border-radius: var(--raio); }
+.adm-rq-pendente, .adm-rq-solicitada, .adm-tr-solicitada { background: var(--alerta-suave); color: var(--alerta); border-color: transparent; }
+.adm-rq-aprovada, .adm-tr-aprovada, .adm-inv-aberto { background: var(--acento-suave); color: var(--acento); border-color: transparent; }
+.adm-rq-atendida, .adm-rq-recebida, .adm-tr-concluida, .adm-inv-fechado { background: color-mix(in srgb, var(--pc-ok) 14%, var(--superficie)); color: var(--pc-ok); border-color: transparent; }
+.adm-rq-atendida_parcial { background: var(--alerta-suave); color: var(--alerta); border-color: transparent; }
