@@ -12,13 +12,13 @@ export const MENU: ItemMenu[] = [
   { to: '/clientes', rotulo: 'Tutores e pets', icone: '◉', exige: 'spa.agenda' },
   { to: '/conversas', rotulo: 'Atendimento humano', icone: '✆', exige: 'spa.bot' },
   { to: '/relatorios', rotulo: 'Relatórios', icone: '▤', exige: 'spa.relatorios', soConfig: true },
+  { to: '/estoque', rotulo: 'Estoque', icone: '▥', exige: 'administracao.estoque' },
   { to: '/configuracao', rotulo: 'Configuração', icone: '⚙', soConfig: true },
 ];
 
 // Ligadas no plano, mas ainda não construídas no painel: aparecem como "em breve".
 const EM_BREVE: { rotulo: string; exige: string }[] = [
   { rotulo: 'Caixa', exige: 'administracao.caixa' },
-  { rotulo: 'Estoque', exige: 'administracao.estoque' },
   { rotulo: 'Compras', exige: 'administracao.compras' },
   { rotulo: 'Hotel e creche', exige: 'daycare.hotel' },
   { rotulo: 'Prontuário', exige: 'vet.prontuario' },
