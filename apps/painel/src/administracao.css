@@ -51,3 +51,16 @@
   .adm-direita { margin-left: 0; }
   .adm-minimo { max-width: none; }
 }
+
+/* Compras */
+.adm-botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-num { width: 7.5em; text-align: right; }
+.adm-linha-status { margin: 0 0 10px; }
+.adm-confirmacao { display: grid; gap: 10px; }
+.adm-lista-simples { margin: 0; padding-left: 18px; }
+.adm-status { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px;
+  background: var(--superficie-2); color: var(--mudo); border: 1px solid var(--linha); white-space: nowrap; }
+.adm-st-enviado { background: var(--acento-suave); color: var(--acento); border-color: transparent; }
+.adm-st-recebido_parcial { background: var(--alerta-suave); color: var(--alerta); border-color: transparent; }
+.adm-st-recebido { background: color-mix(in srgb, var(--pc-ok) 14%, var(--superficie)); color: var(--pc-ok); border-color: transparent; }
+.adm-st-cancelado, .adm-st-encerrado { text-decoration: none; opacity: .8; }

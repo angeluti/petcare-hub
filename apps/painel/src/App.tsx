@@ -9,6 +9,7 @@ import { Configuracao } from './paginas/Configuracao';
 import { Conversas } from './paginas/Conversas';
 import { Relatorios } from './paginas/Relatorios';
 import { Estoque } from './paginas/Estoque';
+import { Compras } from './paginas/Compras';
 
 export function App() {
   const { sessao, carregando, definindoSenha } = useSessao();
@@ -51,6 +52,7 @@ function Rotas() {
         {tem('spa.bot') && <Route path="/conversas" element={<Conversas />} />}
         {tem('spa.relatorios') && podeConfigurar && <Route path="/relatorios" element={<Relatorios />} />}
         {tem('administracao.estoque') && <Route path="/estoque" element={<Estoque />} />}
+        {tem('administracao.compras') && <Route path="/compras" element={<Compras />} />}
         {podeConfigurar && <Route path="/configuracao" element={<Configuracao />} />}
         <Route path="*" element={<Navigate to={inicial} replace />} />
       </Route>
