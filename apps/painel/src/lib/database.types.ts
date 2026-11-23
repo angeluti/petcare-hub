@@ -2241,6 +2241,7 @@ export type Database = {
           petshop_id: string
           preco_venda: number | null
           unidade_base: string
+          unidade_rotulo: string | null
           usa_como_insumo: boolean
           usa_como_venda: boolean
         }
@@ -2258,6 +2259,7 @@ export type Database = {
           petshop_id: string
           preco_venda?: number | null
           unidade_base: string
+          unidade_rotulo?: string | null
           usa_como_insumo?: boolean
           usa_como_venda?: boolean
         }
@@ -2275,6 +2277,7 @@ export type Database = {
           petshop_id?: string
           preco_venda?: number | null
           unidade_base?: string
+          unidade_rotulo?: string | null
           usa_como_insumo?: boolean
           usa_como_venda?: boolean
         }
