@@ -72,3 +72,21 @@
 .adm-rq-aprovada, .adm-tr-aprovada, .adm-inv-aberto { background: var(--acento-suave); color: var(--acento); border-color: transparent; }
 .adm-rq-atendida, .adm-rq-recebida, .adm-tr-concluida, .adm-inv-fechado { background: color-mix(in srgb, var(--pc-ok) 14%, var(--superficie)); color: var(--pc-ok); border-color: transparent; }
 .adm-rq-atendida_parcial { background: var(--alerta-suave); color: var(--alerta); border-color: transparent; }
+
+/* Contas */
+.adm-resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.adm-resumo-item { display: grid; gap: 2px; padding: 12px 14px; background: var(--superficie); border: 1px solid var(--linha); border-radius: var(--raio); }
+.adm-resumo-item b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.adm-resumo-item.destaque { border-color: var(--perigo); }
+.adm-resumo-item.destaque b { color: var(--perigo); }
+.adm-ct-vencida { background: var(--perigo-suave); color: var(--perigo); border-color: transparent; }
+.adm-ct-hoje { background: var(--alerta-suave); color: var(--alerta); border-color: transparent; }
+.adm-ct-aberta { background: var(--acento-suave); color: var(--acento); border-color: transparent; }
+.adm-ct-ok { background: color-mix(in srgb, var(--pc-ok) 14%, var(--superficie)); color: var(--pc-ok); border-color: transparent; }
+.adm-detalhe { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.adm-detalhe dt { color: var(--mudo); }
+.adm-detalhe dd { margin: 0; }
+.aba-corpo.adm-categorias { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 900px; }
+.adm-cat-lista { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.adm-cat-lista li { display: flex; align-items: center; gap: 8px; }
+.adm-cat-lista li.inativo input { opacity: .55; }

@@ -14,6 +14,7 @@ export const MENU: ItemMenu[] = [
   { to: '/relatorios', rotulo: 'Relatórios', icone: '▤', exige: 'spa.relatorios', soConfig: true },
   { to: '/estoque', rotulo: 'Estoque', icone: '▥', exige: 'administracao.estoque' },
   { to: '/compras', rotulo: 'Compras', icone: '▧', exige: 'administracao.compras' },
+  { to: '/contas', rotulo: 'Contas', icone: '▦', exige: 'administracao.contas_receber', soConfig: true },
   { to: '/configuracao', rotulo: 'Configuração', icone: '⚙', soConfig: true },
 ];
 
